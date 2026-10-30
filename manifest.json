@@ -4,8 +4,8 @@
   "description": "Gestisci partite e classifica ELO per il padel",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#0f0f1a",
-  "theme_color": "#00d4aa",
+  "background_color": "#2b1c6b",
+  "theme_color": "#6f52ff",
   "orientation": "portrait-primary",
   "icons": [
     {
