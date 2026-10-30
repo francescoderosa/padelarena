@@ -18,10 +18,10 @@ const ELO_DEFAULT = 1000;
 const STORE_KEY   = 'padelRanking_v2';
 const SYNC_KEY    = 'padelSync_config_v1';
 
-// Default JSONBin.io credentials
+// Default JSONBin.io credentials (configurati dalla UI, salvati in localStorage)
 const DEFAULT_SYNC = {
-  binId: '6ae49660ffd5d16053987328',
-  apiKey: '$2a$10$FKSJxToWH1lLOqb8uzaYM.dV0s6QPJ7Is1s2VkE5VLTR7.V.j12lm',
+  binId: '',
+  apiKey: '',
   autoSync: true,
 };
 

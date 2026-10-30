@@ -15,9 +15,9 @@ PWA moderna per gestire partite di padel, serate a torneo e classifica ELO condi
 
 ## ☁️ Sincronizzazione Multi-dispositivo
 
-L'app include già configurato un Bin condiviso su **JSONBin.io**:
-- **Bin ID**: `6ae49660ffd5d16053987328`
-- **Access Key**: configurata di default nel codice
+L'app supporta la sincronizzazione condivisa su **JSONBin.io**, configurata dall'interfaccia:
+- Apri il pannello `⚙️` nell'header e inserisci **Bin ID** e **Access Key** del tuo Bin JSONBin.
+- La configurazione viene salvata nel `localStorage` del dispositivo (non è nel codice).
 
 ### Come funziona:
 1. **Auto-sync**: all'avvio dell'app e ad ogni salvataggio (partita, torneo, punteggio) i dati vengono sincronizzati.
