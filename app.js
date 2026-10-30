@@ -46,6 +46,8 @@ let activePage = 'ranking';
 // ── ARCADE AUDIO SYNTHESIZER (Pure Web Audio API, Zero Dependencies) ───────
 let audioCtx = null;
 let soundEnabled = localStorage.getItem('padel_sound_enabled') !== 'false';
+const storedVolume = Number(localStorage.getItem('padel_sound_volume'));
+let soundVolume = Number.isFinite(storedVolume) ? Math.min(1, Math.max(0, storedVolume)) : 0.7;
 
 function initAudio() {
   if (!audioCtx && (window.AudioContext || window.webkitAudioContext)) {
@@ -63,7 +65,22 @@ function toggleSound() {
 
 function updateSoundBtn() {
   const btn = document.getElementById('btn-toggle-sound');
-  if (btn) btn.textContent = soundEnabled ? '🔊' : '🔇';
+  if (btn) btn.textContent = soundEnabled && soundVolume > 0 ? '🔊' : '🔇';
+}
+
+function updateVolumeControl() {
+  const input = document.getElementById('sound-volume');
+  const output = document.getElementById('sound-volume-value');
+  const percentage = Math.round(soundVolume * 100);
+  if (input) input.value = percentage;
+  if (output) output.textContent = `${percentage}%`;
+  updateSoundBtn();
+}
+
+function setSoundVolume(value) {
+  soundVolume = Math.min(1, Math.max(0, Number(value) / 100));
+  localStorage.setItem('padel_sound_volume', String(soundVolume));
+  updateVolumeControl();
 }
 
 function playSfx(type) {
@@ -81,7 +98,7 @@ function playSfx(type) {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(550, now);
       osc.frequency.exponentialRampToValueAtTime(1100, now + 0.04);
-      gain.gain.setValueAtTime(0.24, now);
+      gain.gain.setValueAtTime(0.24 * soundVolume, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
@@ -93,7 +110,7 @@ function playSfx(type) {
         const gain = audioCtx.createGain();
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(freq, now + idx * 0.08);
-        gain.gain.setValueAtTime(0.28, now + idx * 0.08);
+        gain.gain.setValueAtTime(0.28 * soundVolume, now + idx * 0.08);
         gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.12);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
@@ -108,7 +125,7 @@ function playSfx(type) {
         osc.type = 'square';
         const start = now + idx * 0.11;
         osc.frequency.setValueAtTime(freq, start);
-        gain.gain.setValueAtTime(0.28, start);
+        gain.gain.setValueAtTime(0.28 * soundVolume, start);
         gain.gain.exponentialRampToValueAtTime(0.001, start + (idx === 3 ? 0.42 : 0.12));
         osc.connect(gain);
         gain.connect(audioCtx.destination);
@@ -121,7 +138,7 @@ function playSfx(type) {
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(180, now);
       osc.frequency.exponentialRampToValueAtTime(40, now + 0.14);
-      gain.gain.setValueAtTime(0.35, now);
+      gain.gain.setValueAtTime(0.35 * soundVolume, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
@@ -278,7 +295,7 @@ function scheduleCloudPush() {
 }
 
 async function pushToCloud() {
-  if (isSyncing) return;
+  if (isSyncing) return false;
   isSyncing = true;
   updateSyncUI('syncing', 'Invio...');
 
@@ -298,16 +315,18 @@ async function pushToCloud() {
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     updateSyncUI('synced', 'Sync');
+    return true;
   } catch (err) {
     console.warn('Cloud push error:', err);
     updateSyncUI('error', 'Errore');
+    return false;
   } finally {
     isSyncing = false;
   }
 }
 
 async function pullFromCloud(options = { silent: false, force: false }) {
-  if (isSyncing) return;
+  if (isSyncing) return false;
   isSyncing = true;
   updateSyncUI('syncing', 'Scarico...');
 
@@ -320,7 +339,7 @@ async function pullFromCloud(options = { silent: false, force: false }) {
 
     if (!record || typeof record !== 'object') {
       updateSyncUI('synced', 'Sync');
-      return;
+      return true;
     }
 
     const cloudUpdatedAt = Number(record.updatedAt) || 0;
@@ -354,10 +373,12 @@ async function pullFromCloud(options = { silent: false, force: false }) {
       updateSyncUI('synced', 'Sync');
       if (!options.silent) showToast('✅ Già allineato con il Cloud');
     }
+    return true;
   } catch (err) {
     console.warn('Cloud pull error:', err);
     updateSyncUI('error', 'Offline');
     if (!options.silent) showToast('Connessione Cloud non riuscita', 'error');
+    return false;
   } finally {
     isSyncing = false;
   }
@@ -1225,23 +1246,20 @@ function saveTournament() {
 
 // ── SYNC MODAL & CONTROLS ────────────────────────────────────────────────────
 function initSyncModal() {
-  const btnQuick = document.getElementById('btn-sync-quick');
   const btnOpenModal = document.getElementById('btn-open-sync-modal');
   const btnSaveConfig = document.getElementById('btn-save-sync-config');
   const btnPull = document.getElementById('btn-sync-pull');
   const btnPush = document.getElementById('btn-sync-push');
   const btnToggleSound = document.getElementById('btn-toggle-sound');
+  const volumeControl = document.getElementById('sound-volume');
 
   if (btnToggleSound) {
     btnToggleSound.addEventListener('click', toggleSound);
     updateSoundBtn();
   }
-
-  if (btnQuick) {
-    btnQuick.addEventListener('click', () => {
-      playSfx('click');
-      pullFromCloud({ silent: false, force: false });
-    });
+  if (volumeControl) {
+    volumeControl.addEventListener('input', event => setSoundVolume(event.target.value));
+    updateVolumeControl();
   }
 
   if (btnOpenModal) {
@@ -1273,9 +1291,8 @@ function initSyncModal() {
       playSfx('click');
       state.updatedAt = Date.now();
       saveState(true);
-      await pushToCloud();
-      showToast('⬆️ Inviato al Cloud con successo');
-      updateSyncUI('synced', 'Sync');
+      const pushed = await pushToCloud();
+      showToast(pushed ? '⬆️ Inviato al Cloud con successo' : 'Invio al Cloud non riuscito', pushed ? '' : 'error');
     });
   }
 }
@@ -1322,10 +1339,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   loadSyncConfig();
   loadState();
 
-  if (state.players.length === 0) {
-    seedDemoData();
-  }
-
   initNav();
   initModalClose();
   initMatchModal();
@@ -1339,7 +1352,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderRanking();
   registerSW();
 
-  if (syncConfig.autoSync) {
-    pullFromCloud({ silent: true, force: false });
+  const cloudAvailable = syncConfig.autoSync
+    ? await pullFromCloud({ silent: true, force: false })
+    : false;
+
+  if (state.players.length === 0 && (!syncConfig.autoSync || cloudAvailable)) {
+    seedDemoData();
+    renderPage(activePage);
   }
 });

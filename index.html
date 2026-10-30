@@ -117,16 +117,7 @@
     <div class="footer-inner">
       <span class="footer-brand">⚡ CONTROVETRO <small>PRO LEAGUE</small></span>
       <div class="footer-sync-tools">
-        <button class="btn-icon btn-icon-audio" id="btn-toggle-sound" title="Audio Arcade On/Off">
-          🔊
-        </button>
-        <span class="footer-sync-label">☁️ Cloud Sync</span>
-        <button class="btn-sync-quick" id="btn-sync-quick" title="Sincronizza ora col Cloud">
-          <span class="sync-icon" id="sync-icon">🔄</span>
-          <span class="sync-dot" id="sync-dot" title="Stato sincronizzazione"></span>
-          <span class="sync-text" id="sync-text">Sync</span>
-        </button>
-        <button class="btn-icon btn-icon-cloud" id="btn-open-sync-modal" title="Impostazioni Cloud Sync">
+        <button class="btn-icon btn-icon-cloud" id="btn-open-sync-modal" title="Settings">
           ⚙️
         </button>
       </div>
@@ -366,6 +357,17 @@
 
       <div class="sync-info-box">
         <p>Sincronizzazione gestita automaticamente dal Cloud. Le credenziali restano protette sul server e non vengono mai richieste dall'app.</p>
+      </div>
+
+      <div class="form-group">
+        <label class="volume-label" for="sound-volume">
+          <span>🔊 Volume Audio Arcade</span>
+          <output id="sound-volume-value">70%</output>
+        </label>
+        <div class="volume-control">
+          <button class="btn-icon btn-icon-audio" id="btn-toggle-sound" title="Audio Arcade On/Off">🔊</button>
+          <input type="range" id="sound-volume" min="0" max="100" step="5" value="70" aria-label="Volume Audio Arcade" />
+        </div>
       </div>
 
       <div class="form-group">
