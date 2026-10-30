@@ -17,11 +17,9 @@ const ELO_K       = 32;
 const ELO_DEFAULT = 1000;
 const STORE_KEY   = 'padelRanking_v2';
 const SYNC_KEY    = 'padelSync_config_v1';
+const SYNC_ENDPOINT = '/api/sync';
 
-// Default JSONBin.io credentials (configurati dalla UI, salvati in localStorage)
 const DEFAULT_SYNC = {
-  binId: '',
-  apiKey: '',
   autoSync: true,
 };
 
@@ -205,21 +203,24 @@ function getPlayerTier(elo) {
 function loadSyncConfig() {
   try {
     const raw = localStorage.getItem(SYNC_KEY);
-    if (raw) syncConfig = { ...DEFAULT_SYNC, ...JSON.parse(raw) };
+    const parsed = raw ? JSON.parse(raw) : {};
+    syncConfig = { autoSync: parsed.autoSync !== false };
   } catch (e) {
     syncConfig = { ...DEFAULT_SYNC };
   }
+  // Rimuove dal localStorage eventuali credenziali salvate dalle versioni precedenti.
+  saveSyncConfig();
 }
 
 function saveSyncConfig() {
-  localStorage.setItem(SYNC_KEY, JSON.stringify(syncConfig));
+  localStorage.setItem(SYNC_KEY, JSON.stringify({ autoSync: syncConfig.autoSync }));
 }
 
 function saveState(skipCloud = false) {
   state.updatedAt = Date.now();
   localStorage.setItem(STORE_KEY, JSON.stringify(state));
 
-  if (!skipCloud && syncConfig.autoSync && syncConfig.binId && syncConfig.apiKey) {
+  if (!skipCloud && syncConfig.autoSync) {
     scheduleCloudPush();
   }
 }
@@ -277,7 +278,7 @@ function scheduleCloudPush() {
 }
 
 async function pushToCloud() {
-  if (isSyncing || !syncConfig.binId || !syncConfig.apiKey) return;
+  if (isSyncing) return;
   isSyncing = true;
   updateSyncUI('syncing', 'Invio...');
 
@@ -289,12 +290,9 @@ async function pushToCloud() {
       updatedAt: state.updatedAt || Date.now(),
     };
 
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${syncConfig.binId}`, {
+    const res = await fetch(SYNC_ENDPOINT, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Access-Key': syncConfig.apiKey,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     });
 
@@ -309,17 +307,12 @@ async function pushToCloud() {
 }
 
 async function pullFromCloud(options = { silent: false, force: false }) {
-  if (isSyncing || !syncConfig.binId || !syncConfig.apiKey) return;
+  if (isSyncing) return;
   isSyncing = true;
   updateSyncUI('syncing', 'Scarico...');
 
   try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${syncConfig.binId}/latest`, {
-      method: 'GET',
-      headers: {
-        'X-Access-Key': syncConfig.apiKey,
-      },
-    });
+    const res = await fetch(SYNC_ENDPOINT, { method: 'GET' });
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
@@ -1257,12 +1250,8 @@ function initSyncModal() {
 
   if (btnSaveConfig) {
     btnSaveConfig.addEventListener('click', () => {
-      const binId = document.getElementById('sync-bin-id').value.trim();
-      const apiKey = document.getElementById('sync-api-key').value.trim();
       const autoSync = document.getElementById('sync-auto').checked;
 
-      syncConfig.binId = binId;
-      syncConfig.apiKey = apiKey;
       syncConfig.autoSync = autoSync;
       saveSyncConfig();
       playSfx('click');
@@ -1292,8 +1281,6 @@ function initSyncModal() {
 }
 
 function openSyncModal() {
-  document.getElementById('sync-bin-id').value = syncConfig.binId || '';
-  document.getElementById('sync-api-key').value = syncConfig.apiKey || '';
   document.getElementById('sync-auto').checked = !!syncConfig.autoSync;
   updateSyncUI(isSyncing ? 'syncing' : 'synced');
   openModal('modal-sync');
@@ -1306,7 +1293,7 @@ function initAutoSyncPolling() {
     const openModals = document.querySelectorAll('.modal-overlay:not(.hidden)');
     if (openModals.length > 0) return;
 
-    if (syncConfig.autoSync && syncConfig.binId && syncConfig.apiKey) {
+    if (syncConfig.autoSync) {
       pullFromCloud({ silent: true, force: false });
     }
   }, 25000);
@@ -1352,7 +1339,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderRanking();
   registerSW();
 
-  if (syncConfig.binId && syncConfig.apiKey) {
+  if (syncConfig.autoSync) {
     pullFromCloud({ silent: true, force: false });
   }
 });
