@@ -1,7 +1,7 @@
 {
-  "name": "Padel Ranking",
-  "short_name": "Padel",
-  "description": "Gestisci partite e classifica ELO per il padel",
+  "name": "Controvetro Pro League",
+  "short_name": "Controvetro",
+  "description": "Gestisci partite e classifica ELO di Controvetro",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#2b1c6b",
@@ -22,4 +22,3 @@
     }
   ]
 }
-

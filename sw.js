@@ -1,4 +1,4 @@
-const CACHE_NAME = 'padel-ranking-v3.0';
+const CACHE_NAME = 'controvetro-v4.0';
 const ASSETS = ['./', './index.html', './style.css', './app.js', './manifest.json'];
 
 self.addEventListener('install', e => {

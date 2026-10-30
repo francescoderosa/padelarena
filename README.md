@@ -1,4 +1,4 @@
-# 🎾 Padel Ranking PWA
+# 🎾 Controvetro PWA
 
 PWA moderna per gestire partite di padel, serate a torneo e classifica ELO condivisa tra più dispositivi.
 
@@ -16,13 +16,13 @@ PWA moderna per gestire partite di padel, serate a torneo e classifica ELO condi
 ## ☁️ Sincronizzazione Multi-dispositivo
 
 L'app supporta la sincronizzazione condivisa su **JSONBin.io**, configurata dall'interfaccia:
-- Apri il pannello `⚙️` nell'header e inserisci **Bin ID** e **Access Key** del tuo Bin JSONBin.
+- Apri il pannello `⚙️` nel footer e inserisci **Bin ID** e **Access Key** del tuo Bin JSONBin.
 - La configurazione viene salvata nel `localStorage` del dispositivo (non è nel codice).
 
 ### Come funziona:
 1. **Auto-sync**: all'avvio dell'app e ad ogni salvataggio (partita, torneo, punteggio) i dati vengono sincronizzati.
 2. **Polling in serata**: mentre l'app è aperta, ogni 25 secondi controlla in background se un altro giocatore ha registrato un risultato.
-3. **Pulsante rapido `🔄 Sync`**: tocca il pulsante nell'header per forzare l'aggiornamento istantaneo.
+3. **Pulsante rapido `🔄 Sync`**: tocca il pulsante nel footer per forzare l'aggiornamento istantaneo.
 4. **Pannello `⚙️`**: permette di visualizzare lo stato, scaricare o inviare manualmente i dati, o cambiare Bin ID.
 
 ---

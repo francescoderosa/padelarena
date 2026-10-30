@@ -1,5 +1,5 @@
 /* ============================================================
-   PADEL ARENA v3.0 – ARCADE GAMING EDITION
+   CONTROVETRO v4.0 – ARCADE GAMING EDITION
    Features:
      • Fighting Game / Esports Arena Cyberpunk Visuals
      • Web Audio API Retro Arcade Synthesizer (Zero Dependencies)
@@ -83,7 +83,7 @@ function playSfx(type) {
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(550, now);
       osc.frequency.exponentialRampToValueAtTime(1100, now + 0.04);
-      gain.gain.setValueAtTime(0.12, now);
+      gain.gain.setValueAtTime(0.24, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
       osc.connect(gain);
       gain.connect(audioCtx.destination);
@@ -95,7 +95,7 @@ function playSfx(type) {
         const gain = audioCtx.createGain();
         osc.type = 'sawtooth';
         osc.frequency.setValueAtTime(freq, now + idx * 0.08);
-        gain.gain.setValueAtTime(0.14, now + idx * 0.08);
+        gain.gain.setValueAtTime(0.28, now + idx * 0.08);
         gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.08 + 0.12);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
@@ -110,7 +110,7 @@ function playSfx(type) {
         osc.type = 'square';
         const start = now + idx * 0.11;
         osc.frequency.setValueAtTime(freq, start);
-        gain.gain.setValueAtTime(0.14, start);
+        gain.gain.setValueAtTime(0.28, start);
         gain.gain.exponentialRampToValueAtTime(0.001, start + (idx === 3 ? 0.42 : 0.12));
         osc.connect(gain);
         gain.connect(audioCtx.destination);
@@ -123,7 +123,7 @@ function playSfx(type) {
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(180, now);
       osc.frequency.exponentialRampToValueAtTime(40, now + 0.14);
-      gain.gain.setValueAtTime(0.2, now);
+      gain.gain.setValueAtTime(0.35, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
       osc.connect(gain);
       gain.connect(audioCtx.destination);

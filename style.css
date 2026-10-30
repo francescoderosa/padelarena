@@ -1,5 +1,5 @@
 /* ============================================================
-   PADEL ARENA – BRAWL / ARCADE THEME
+   CONTROVETRO – BRAWL / ARCADE THEME
    Vibrant, chunky, sticker-style UI inspired by Brawl Stars,
    Fortnite and modern mobile games.
    ============================================================ */
@@ -132,7 +132,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .header-brand {
@@ -187,8 +187,19 @@ body {
 .nav {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.nav::-webkit-scrollbar { display: none; }
+.nav-btn { flex: 0 0 auto; white-space: nowrap; }
+
+.header-audio-tools {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
 }
 
 .nav-btn {
@@ -239,12 +250,6 @@ body {
 }
 
 /* ── HEADER CONTROLS ────────────────────────────────────────── */
-.header-sync-tools {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .btn-icon-audio, .btn-icon-cloud {
   background: var(--bg-surface);
   border: 3px solid var(--ink);
@@ -324,6 +329,45 @@ body {
   max-width: 1000px;
   margin: 0 auto;
   padding: 26px 18px 100px;
+}
+
+.app-footer {
+  position: relative;
+  z-index: 2;
+  border-top: 4px solid var(--ink);
+  background: linear-gradient(180deg, #33207c, #241352);
+  box-shadow: 0 -6px 0 rgba(27, 13, 61, 0.35);
+}
+.footer-inner {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 16px 18px 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.footer-brand {
+  font-family: var(--font-display);
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.footer-brand small {
+  color: var(--bs-yellow);
+  font-size: 0.68rem;
+  margin-left: 6px;
+}
+.footer-sync-tools {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.footer-sync-label {
+  color: var(--text-dim);
+  font-size: 0.82rem;
+  white-space: nowrap;
 }
 
 .page { display: none; }
@@ -1452,12 +1496,12 @@ select option { background: #2a1a66; }
 
 /* ── RESPONSIVE ─────────────────────────────────────────────── */
 @media (max-width: 620px) {
-  .header-inner { flex-direction: column; align-items: stretch; gap: 10px; }
-  .header-brand { justify-content: space-between; }
-  .nav { justify-content: center; }
-  .header-sync-tools { justify-content: center; }
+  .header-inner { flex-direction: column; align-items: stretch; gap: 9px; }
+  .header-brand { justify-content: space-between; padding-right: 50px; }
+  .nav { justify-content: flex-start; width: 100%; padding: 0 2px 4px; }
+  .header-audio-tools { position: absolute; top: 13px; right: 18px; }
   .logo { font-size: 1.35rem; }
-  .nav-btn { padding: 8px 13px; font-size: 0.82rem; }
+  .nav-btn { padding: 8px 11px; font-size: 0.8rem; }
   .page-header h2 { font-size: 1.55rem; }
   .teams-grid { grid-template-columns: 1fr; }
   .vs-divider { margin: 4px 0; }
@@ -1475,6 +1519,23 @@ select option { background: #2a1a66; }
   .match-card { padding: 14px; }
   .modal-footer { justify-content: stretch; }
   .modal-footer .btn { flex: 1; }
+  .footer-inner { align-items: stretch; flex-direction: column; gap: 12px; padding: 16px 18px 20px; }
+  .footer-brand { text-align: center; }
+  .footer-sync-tools { justify-content: center; }
+}
+
+@media (max-width: 420px) {
+  .main { padding: 20px 12px 72px; }
+  .header-inner { padding: 10px 12px; }
+  .logo { font-size: 1.18rem; gap: 5px; }
+  .logo-tag { font-size: 0.62rem; padding: 3px 7px; }
+  .nav { gap: 6px; }
+  .nav-btn { padding: 7px 9px; font-size: 0.74rem; border-width: 2px; box-shadow: 0 3px 0 var(--ink); }
+  .nav-icon { display: none; }
+  .page-header { align-items: stretch; }
+  .page-header > .btn { width: 100%; }
+  .footer-sync-label { display: none; }
+  .footer-sync-tools { gap: 10px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
