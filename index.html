@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#070714" />
+  <meta name="description" content="Padel Arena – League & ELO Ranking" />
+  <title>⚡ PADEL ARENA · Pro Ranking</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <!-- Google Fonts: Orbitron, Rajdhani, Teko for Cyber Arcade UI -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800;900&family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="cyber-bg-lines"></div>
+<div id="app">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <h1 class="logo">
+          <span class="logo-ball">🎾</span>
+          <span class="logo-text">PADEL<span class="logo-accent">ARENA</span></span>
+        </h1>
+        <span class="logo-tag">PRO LEAGUE</span>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-btn active" data-page="ranking">
+          <span class="nav-icon">🏆</span> Classifica
+        </button>
+        <button class="nav-btn" data-page="matches">
+          <span class="nav-icon">⚔️</span> Battaglie
+        </button>
+        <button class="nav-btn" data-page="tournaments">
+          <span class="nav-icon">🎯</span> Serate
+        </button>
+        <button class="nav-btn" data-page="players">
+          <span class="nav-icon">👥</span> Roster
+        </button>
+      </nav>
+
+      <div class="header-sync-tools">
+        <button class="btn-icon btn-icon-audio" id="btn-toggle-sound" title="Audio Arcade On/Off">
+          🔊
+        </button>
+        <button class="btn-sync-quick" id="btn-sync-quick" title="Sincronizza ora col Cloud">
+          <span class="sync-icon" id="sync-icon">🔄</span>
+          <span class="sync-dot" id="sync-dot" title="Stato sincronizzazione"></span>
+          <span class="sync-text" id="sync-text">Sync</span>
+        </button>
+        <button class="btn-icon btn-icon-cloud" id="btn-open-sync-modal" title="Impostazioni Cloud Sync">
+          ⚙️
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+
+    <!-- ===== RANKING ===== -->
+    <section id="page-ranking" class="page active">
+      <div class="page-header">
+        <div>
+          <div class="badge-header">LEADERBOARD GLOBALE</div>
+          <h2>🏆 Classifica ELO Champions</h2>
+          <span class="subtitle">Ranking calcolato con formula dinamica coppia/avversari</span>
+        </div>
+      </div>
+      <div id="ranking-list" class="ranking-list"></div>
+    </section>
+
+    <!-- ===== MATCHES ===== -->
+    <section id="page-matches" class="page">
+      <div class="page-header">
+        <div>
+          <div class="badge-header">BATTLE LOG</div>
+          <h2>⚔️ Partite & Scontri</h2>
+        </div>
+        <button class="btn btn-primary btn-arcade" id="btn-new-match">
+          <span class="btn-glow-text">+ NUOVA SFIDA</span>
+        </button>
+      </div>
+      <!-- Live matches banner -->
+      <div id="ongoing-section" class="hidden">
+        <div class="section-label live-label">
+          <span class="live-pulse-dot"></span> SCONTRI IN CORSO SUI CAMPI
+        </div>
+        <div id="ongoing-list" class="matches-list"></div>
+        <div class="section-label" style="margin-top:28px">✅ SFIDE COMPLETATE</div>
+      </div>
+      <div id="matches-list" class="matches-list"></div>
+    </section>
+
+    <!-- ===== TOURNAMENTS ===== -->
+    <section id="page-tournaments" class="page">
+      <div class="page-header">
+        <div>
+          <div class="badge-header">TOURNAMENT ARENA</div>
+          <h2>🎯 Serate Torneo</h2>
+        </div>
+        <button class="btn btn-primary btn-arcade" id="btn-new-tournament">
+          <span class="btn-glow-text">+ CREA SERATA</span>
+        </button>
+      </div>
+      <div id="tournaments-list"></div>
+    </section>
+
+    <!-- ===== PLAYERS ===== -->
+    <section id="page-players" class="page">
+      <div class="page-header">
+        <div>
+          <div class="badge-header">HERO ROSTER</div>
+          <h2>👥 Giocatori & Tier</h2>
+        </div>
+        <button class="btn btn-primary btn-arcade" id="btn-add-player">
+          <span class="btn-glow-text">+ RECLUTA GIOCATORE</span>
+        </button>
+      </div>
+      <div id="players-list" class="players-list"></div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Canvas per effetti grafici vittoria/scintille -->
+<canvas id="fx-canvas"></canvas>
+
+<!-- ===== MODAL: NEW / EDIT MATCH ===== -->
+<div id="modal-match" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-match-title">⚔️ Nuova Partita</h3>
+      <button class="modal-close" data-close="modal-match">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Match type -->
+      <div class="form-group">
+        <label>Tipo di Punteggio</label>
+        <div class="toggle-group" id="match-type-toggle">
+          <button class="toggle-btn active" data-val="sets">🎾 Al Meglio dei Set</button>
+          <button class="toggle-btn" data-val="games">🏃 Conteggio Games</button>
+        </div>
+      </div>
+
+      <!-- Teams -->
+      <div class="teams-grid">
+        <div class="team-card team-a">
+          <div class="team-label">🔵 SQUADRA A</div>
+          <div class="player-select-group">
+            <label>Player 1</label>
+            <select id="teamA1"><option value="">— Seleziona —</option></select>
+          </div>
+          <div class="player-select-group">
+            <label>Player 2</label>
+            <select id="teamA2"><option value="">— Seleziona —</option></select>
+          </div>
+        </div>
+        <div class="vs-divider">
+          <span class="vs-text">VS</span>
+        </div>
+        <div class="team-card team-b">
+          <div class="team-label">🔴 SQUADRA B</div>
+          <div class="player-select-group">
+            <label>Player 1</label>
+            <select id="teamB1"><option value="">— Seleziona —</option></select>
+          </div>
+          <div class="player-select-group">
+            <label>Player 2</label>
+            <select id="teamB2"><option value="">— Seleziona —</option></select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Score -->
+      <div class="score-section" id="score-section">
+        <h4 id="score-section-title">Risultato Finale</h4>
+        <div class="score-input-row">
+          <div class="score-box">
+            <label>🔵 A</label>
+            <input type="number" id="scoreA" min="0" max="99" value="0" />
+          </div>
+          <div class="score-sep">—</div>
+          <div class="score-box">
+            <label>🔴 B</label>
+            <input type="number" id="scoreB" min="0" max="99" value="0" />
+          </div>
+        </div>
+        <p class="score-hint" id="score-hint">Inserisci i set vinti da ogni squadra</p>
+      </div>
+
+      <!-- Date + status -->
+      <div class="form-row">
+        <div class="form-group">
+          <label>Data Match</label>
+          <input type="date" id="match-date" />
+        </div>
+        <div class="form-group">
+          <label>Stato Sfida</label>
+          <div class="toggle-group" id="match-status-toggle">
+            <button class="toggle-btn" data-val="ongoing">🔴 In Campo Ora</button>
+            <button class="toggle-btn active" data-val="completed">✅ Terminata</button>
+          </div>
+        </div>
+      </div>
+
+      <input type="hidden" id="edit-match-id" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="modal-match">Annulla</button>
+      <button class="btn btn-primary btn-arcade" id="btn-save-match">
+        <span>SALVA SFIDA</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: NEW TOURNAMENT ===== -->
+<div id="modal-tournament" class="modal-overlay hidden">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🎯 Nuova Serata Torneo</h3>
+      <button class="modal-close" data-close="modal-tournament">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Titolo Torneo / Serata</label>
+        <input type="text" id="tourn-name" placeholder="Es. Champions Friday #4" />
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Data</label>
+          <input type="date" id="tourn-date" />
+        </div>
+        <div class="form-group">
+          <label>Metrica Punteggio</label>
+          <div class="toggle-group" id="tourn-type-toggle">
+            <button class="toggle-btn active" data-val="games">🏃 Games</button>
+            <button class="toggle-btn" data-val="sets">🎾 Set</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Format -->
+      <div class="form-group">
+        <label>Struttura Tabellone</label>
+        <div class="toggle-group" id="tourn-format-toggle">
+          <button class="toggle-btn active" data-val="3c2l" title="3 coppie × 2 gironi = 6 partite">3 Coppie · Andata & Ritorno <small>(6 sfide)</small></button>
+          <button class="toggle-btn" data-val="4c1l" title="4 coppie × 1 girone = 6 partite">4 Coppie · Round-Robin <small>(6 sfide)</small></button>
+        </div>
+      </div>
+
+      <!-- Couples builder -->
+      <div class="form-group">
+        <label>Composizione Coppie</label>
+        <div id="tourn-couples-builder"></div>
+        <button class="btn btn-secondary" id="btn-add-couple" style="margin-top:8px;width:100%">+ Aggiungi Coppia</button>
+      </div>
+      <p id="tourn-matchup-preview" class="score-hint"></p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="modal-tournament">Annulla</button>
+      <button class="btn btn-primary btn-arcade" id="btn-save-tournament">
+        <span>INIZIA TORNEO</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: TOURNAMENT DETAIL ===== -->
+<div id="modal-tourn-detail" class="modal-overlay hidden">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h3 id="tourn-detail-title">🎯 Dettaglio Serata</h3>
+      <button class="modal-close" data-close="modal-tourn-detail">✕</button>
+    </div>
+    <div class="modal-body" id="tourn-detail-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="modal-tourn-detail">Chiudi</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: ADD/EDIT PLAYER ===== -->
+<div id="modal-player" class="modal-overlay hidden">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3 id="modal-player-title">👤 Nuovo Eroe</h3>
+      <button class="modal-close" data-close="modal-player">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-player-id" />
+      <div class="form-group">
+        <label>Nome Giocatore</label>
+        <input type="text" id="player-name" placeholder="Es. Alex Smash" />
+      </div>
+      <div class="form-group">
+        <label>Icona Avatar</label>
+        <div class="emoji-picker" id="emoji-picker"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="modal-player">Annulla</button>
+      <button class="btn btn-primary btn-arcade" id="btn-save-player">
+        <span>CONFERMA</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: ENTER RESULT (Nested on top) ===== -->
+<div id="modal-result" class="modal-overlay hidden">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>⚡ Registra Risultato</h3>
+      <button class="modal-close" data-close="modal-result">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="result-teams-preview" class="result-preview"></div>
+      <div class="score-section">
+        <div class="score-input-row">
+          <div class="score-box">
+            <label>🔵 A</label>
+            <input type="number" id="result-scoreA" min="0" max="99" value="0" />
+          </div>
+          <div class="score-sep">—</div>
+          <div class="score-box">
+            <label>🔴 B</label>
+            <input type="number" id="result-scoreB" min="0" max="99" value="0" />
+          </div>
+        </div>
+        <p class="score-hint" id="result-score-hint">Punteggio ottenuto</p>
+      </div>
+      <input type="hidden" id="result-match-id" />
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="modal-result">Annulla</button>
+      <button class="btn btn-primary btn-arcade" id="btn-save-result">
+        <span>CONFERMA VITTORIA</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: CLOUD SYNC CONFIG ===== -->
+<div id="modal-sync" class="modal-overlay hidden">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>☁️ Sincronizzazione Cloud</h3>
+      <button class="modal-close" data-close="modal-sync">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="sync-info-box">
+        <p>Tutti i dispositivi connessi a questo Bin vedono e aggiornano partite e punteggi in tempo reale.</p>
+        <div class="sync-status-badge-row">
+          <span class="sync-badge" id="sync-modal-badge">Stato: Pronto</span>
+          <span class="sync-time" id="sync-last-time">Ultimo sync: mai</span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>JSONBin Bin ID</label>
+        <input type="text" id="sync-bin-id" spellcheck="false" placeholder="Es. 6ae49660ffd5d16053987328" />
+        <small class="score-hint" style="text-align:left">ID condiviso tra tutti gli smartphone</small>
+      </div>
+
+      <div class="form-group">
+        <label>Access Key</label>
+        <input type="password" id="sync-api-key" placeholder="Access Key JSONBin" />
+      </div>
+
+      <div class="form-group">
+        <label class="checkbox-container">
+          <input type="checkbox" id="sync-auto" checked />
+          <span>Auto-sync attiva (all'avvio e in tempo reale durante i match)</span>
+        </label>
+      </div>
+
+      <div class="sync-actions-row">
+        <button class="btn btn-secondary" id="btn-sync-pull">⬇️ Scarica dal Cloud</button>
+        <button class="btn btn-primary btn-arcade" id="btn-sync-push"><span>⬆️ Invia al Cloud</span></button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="modal-sync">Chiudi</button>
+      <button class="btn btn-primary btn-arcade" id="btn-save-sync-config">
+        <span>SALVA CONFIG</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: CONFIRM ===== -->
+<div id="modal-confirm" class="modal-overlay hidden">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Conferma eliminazione</h3>
+      <button class="modal-close" data-close="modal-confirm">✕</button>
+    </div>
+    <div class="modal-body">
+      <p id="confirm-message">Sei sicuro di voler eliminare questo elemento?</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="modal-confirm">Annulla</button>
+      <button class="btn btn-danger" id="btn-confirm-ok">Elimina</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast hidden"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

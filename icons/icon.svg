@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="80" fill="#1a1a2e"/>
+  <rect width="512" height="512" rx="80" fill="url(#bg)"/>
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#16213e"/>
+      <stop offset="100%" stop-color="#0f0f1a"/>
+    </radialGradient>
+  </defs>
+  <!-- Tennis ball / racket icon -->
+  <circle cx="256" cy="220" r="110" fill="#00d4aa" opacity="0.15"/>
+  <circle cx="256" cy="220" r="90" fill="none" stroke="#00d4aa" stroke-width="8" opacity="0.6"/>
+  <!-- Padel racket handle -->
+  <rect x="246" y="310" width="20" height="80" rx="10" fill="#00d4aa"/>
+  <!-- Racket head -->
+  <ellipse cx="256" cy="210" rx="80" ry="95" fill="none" stroke="#00d4aa" stroke-width="12"/>
+  <!-- Cross strings -->
+  <line x1="256" y1="118" x2="256" y2="302" stroke="#00d4aa" stroke-width="4" opacity="0.5"/>
+  <line x1="178" y1="210" x2="334" y2="210" stroke="#00d4aa" stroke-width="4" opacity="0.5"/>
+  <!-- Ball -->
+  <circle cx="340" cy="140" r="30" fill="#ffd700"/>
+  <path d="M322 128 Q340 110 358 128" fill="none" stroke="#1a1a2e" stroke-width="4"/>
+  <path d="M322 152 Q340 170 358 152" fill="none" stroke="#1a1a2e" stroke-width="4"/>
+  <!-- Text -->
+  <text x="256" y="430" font-family="Arial Black, sans-serif" font-size="52" font-weight="900" fill="#00d4aa" text-anchor="middle">PADEL</text>
+  <text x="256" y="478" font-family="Arial, sans-serif" font-size="30" font-weight="600" fill="#7b2d8b" text-anchor="middle">RANKING</text>
+</svg>
+
