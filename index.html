@@ -34,7 +34,7 @@
           <span class="nav-icon">🏆</span> Classifica
         </button>
         <button class="nav-btn" data-page="matches">
-          <span class="nav-icon">⚔️</span> Battaglie
+          <span class="nav-icon">🎾</span> Battaglie
         </button>
         <button class="nav-btn" data-page="tournaments">
           <span class="nav-icon">🎯</span> Serate
@@ -44,11 +44,6 @@
         </button>
       </nav>
 
-      <div class="header-audio-tools">
-        <button class="btn-icon btn-icon-audio" id="btn-toggle-sound" title="Audio Arcade On/Off">
-          🔊
-        </button>
-      </div>
     </div>
   </header>
 
@@ -71,7 +66,7 @@
       <div class="page-header">
         <div>
           <div class="badge-header">BATTLE LOG</div>
-          <h2>⚔️ Partite & Scontri</h2>
+          <h2>🎾 Partite & Scontri</h2>
         </div>
         <button class="btn btn-primary btn-arcade" id="btn-new-match">
           <span class="btn-glow-text">+ NUOVA SFIDA</span>
@@ -122,6 +117,9 @@
     <div class="footer-inner">
       <span class="footer-brand">⚡ CONTROVETRO <small>PRO LEAGUE</small></span>
       <div class="footer-sync-tools">
+        <button class="btn-icon btn-icon-audio" id="btn-toggle-sound" title="Audio Arcade On/Off">
+          🔊
+        </button>
         <span class="footer-sync-label">☁️ Cloud Sync</span>
         <button class="btn-sync-quick" id="btn-sync-quick" title="Sincronizza ora col Cloud">
           <span class="sync-icon" id="sync-icon">🔄</span>
@@ -143,7 +141,7 @@
 <div id="modal-match" class="modal-overlay hidden">
   <div class="modal">
     <div class="modal-header">
-      <h3 id="modal-match-title">⚔️ Nuova Partita</h3>
+      <h3 id="modal-match-title">🎾 Nuova Partita</h3>
       <button class="modal-close" data-close="modal-match">✕</button>
     </div>
     <div class="modal-body">
@@ -255,20 +253,14 @@
         </div>
       </div>
 
-      <!-- Format -->
-      <div class="form-group">
-        <label>Struttura Tabellone</label>
-        <div class="toggle-group" id="tourn-format-toggle">
-          <button class="toggle-btn active" data-val="3c2l" title="3 coppie × 2 gironi = 6 partite">3 Coppie · Andata & Ritorno <small>(6 sfide)</small></button>
-          <button class="toggle-btn" data-val="4c1l" title="4 coppie × 1 girone = 6 partite">4 Coppie · Round-Robin <small>(6 sfide)</small></button>
-        </div>
-      </div>
-
       <!-- Couples builder -->
       <div class="form-group">
         <label>Composizione Coppie</label>
         <div id="tourn-couples-builder"></div>
-        <button class="btn btn-secondary" id="btn-add-couple" style="margin-top:8px;width:100%">+ Aggiungi Coppia</button>
+        <div class="couple-actions">
+          <button class="btn btn-secondary" id="btn-suggest-couples">✨ Suggerisci coppie</button>
+          <span class="score-hint">4 coppie · 8 giocatori · 6 sfide</span>
+        </div>
       </div>
       <p id="tourn-matchup-preview" class="score-hint"></p>
     </div>

@@ -577,7 +577,7 @@ function renderMatches() {
   }
 
   if (!completed.length && !ongoing.length) {
-    matchList.innerHTML = `<div class="empty-state"><div class="empty-icon">⚔️</div><p>NESSUNA SFIDA REGISTRATA.<br>Clicca "+ NUOVA SFIDA" per scendere in campo.</p></div>`;
+    matchList.innerHTML = `<div class="empty-state"><div class="empty-icon">🎾</div><p>NESSUNA SFIDA REGISTRATA.<br>Clicca "+ NUOVA SFIDA" per scendere in campo.</p></div>`;
   } else {
     matchList.innerHTML = completed.map(m => renderMatchCard(m, false)).join('');
     bindMatchCardEvents(matchList);
@@ -678,7 +678,7 @@ function updateScoreLabels(type) {
 
 function openNewMatchModal() {
   if (state.players.length < 4) return showToast('Servono almeno 4 giocatori nel roster!', 'error');
-  document.getElementById('modal-match-title').textContent = '⚔️ Nuova Partita';
+  document.getElementById('modal-match-title').textContent = '🎾 Nuova Partita';
   document.getElementById('edit-match-id').value = '';
   fillPlayerSelects(['teamA1','teamA2','teamB1','teamB2']);
   document.getElementById('match-date').value = todayStr();
@@ -1129,28 +1129,22 @@ function openMatchupResultModal(tid, muId) {
 }
 
 // ── TOURNAMENT MODAL BUILDER ─────────────────────────────────────────────────
-let tournCoupleCount = 3;
+let tournCoupleCount = 4;
 
 function initTournamentModal() {
   document.getElementById('btn-new-tournament').addEventListener('click', openNewTournamentModal);
   document.getElementById('btn-save-tournament').addEventListener('click', saveTournament);
-  document.getElementById('btn-add-couple').addEventListener('click', addCoupleRow);
+  document.getElementById('btn-suggest-couples').addEventListener('click', suggestCouples);
 
   initToggle('tourn-type-toggle', () => {});
-  initToggle('tourn-format-toggle', val => {
-    tournCoupleCount = val === '3c2l' ? 3 : 4;
-    rebuildCouplesUI();
-    updateMatchupPreview();
-  });
 }
 
 function openNewTournamentModal() {
-  if (state.players.length < 6) return showToast('Servono almeno 6 giocatori nel roster per creare una serata!','error');
+  if (state.players.length < 8) return showToast('Servono almeno 8 giocatori nel roster per creare una serata!','error');
   document.getElementById('tourn-name').value = '';
   document.getElementById('tourn-date').value = todayStr();
   setToggleVal('tourn-type-toggle', 'games');
-  setToggleVal('tourn-format-toggle', '3c2l');
-  tournCoupleCount = 3;
+  tournCoupleCount = 4;
   rebuildCouplesUI();
   updateMatchupPreview();
   openModal('modal-tournament');
@@ -1160,15 +1154,6 @@ function rebuildCouplesUI() {
   const builder = document.getElementById('tourn-couples-builder');
   builder.innerHTML = '';
   for (let i = 0; i < tournCoupleCount; i++) addCoupleRowAt(i);
-  document.getElementById('btn-add-couple').style.display = tournCoupleCount >= 6 ? 'none' : '';
-}
-
-function addCoupleRow() {
-  if (tournCoupleCount >= 6) return;
-  addCoupleRowAt(tournCoupleCount);
-  tournCoupleCount++;
-  document.getElementById('btn-add-couple').style.display = tournCoupleCount >= 6 ? 'none' : '';
-  updateMatchupPreview();
 }
 
 function addCoupleRowAt(idx) {
@@ -1181,25 +1166,34 @@ function addCoupleRowAt(idx) {
     <div class="couple-row-label">Coppia ${idx+1}</div>
     <select class="couple-p1"><option value="">— Player 1 —</option>${opts}</select>
     <select class="couple-p2"><option value="">— Player 2 —</option>${opts}</select>
-    ${idx >= 3 ? `<button class="btn-icon btn-icon-del" onclick="removeCoupleRow(this)">✕</button>` : '<span></span>'}`;
+    <span></span>`;
   builder.appendChild(div);
 }
 
-function removeCoupleRow(btn) {
-  playSfx('click');
-  btn.closest('.couple-row').remove();
-  document.querySelectorAll('.couple-row').forEach((row, i) => {
-    row.dataset.coupleIdx = i;
-    row.querySelector('.couple-row-label').textContent = `Coppia ${i+1}`;
+function suggestCouples() {
+  if (state.players.length < 8) {
+    return showToast('Servono almeno 8 giocatori per suggerire 4 coppie', 'error');
+  }
+
+  const rankedPlayers = [...state.players]
+    .sort((a, b) => (b.elo || ELO_DEFAULT) - (a.elo || ELO_DEFAULT))
+    .slice(0, 8);
+
+  rebuildCouplesUI();
+  const rows = document.querySelectorAll('.couple-row');
+  rows.forEach((row, index) => {
+    const topPlayer = rankedPlayers[index];
+    const bottomPlayer = rankedPlayers[7 - index];
+    row.querySelector('.couple-p1').value = topPlayer.id;
+    row.querySelector('.couple-p2').value = bottomPlayer.id;
   });
-  tournCoupleCount--;
-  document.getElementById('btn-add-couple').style.display = tournCoupleCount >= 6 ? 'none' : '';
   updateMatchupPreview();
+  playSfx('click');
+  showToast('✨ Coppie bilanciate suggerite in base al ranking');
 }
 
 function updateMatchupPreview() {
-  const format = getToggleVal('tourn-format-toggle') || '3c2l';
-  const legs   = format === '3c2l' ? 2 : 1;
+  const legs   = 1;
   const n = document.querySelectorAll('.couple-row').length;
   const total = (n*(n-1)/2) * legs;
   document.getElementById('tourn-matchup-preview').textContent =
@@ -1210,7 +1204,7 @@ function saveTournament() {
   const name   = document.getElementById('tourn-name').value.trim();
   const date   = document.getElementById('tourn-date').value;
   const type   = getToggleVal('tourn-type-toggle') || 'games';
-  const format = getToggleVal('tourn-format-toggle') || '3c2l';
+  const format = '4c1l';
   if (!name) return showToast('Inserisci il titolo della serata','error');
   if (!date) return showToast('Inserisci la data','error');
 

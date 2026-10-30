@@ -104,6 +104,9 @@ body {
 #app {
   position: relative;
   z-index: 2;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Canvas particelle / coriandoli vittoria */
@@ -195,12 +198,6 @@ body {
 }
 .nav::-webkit-scrollbar { display: none; }
 .nav-btn { flex: 0 0 auto; white-space: nowrap; }
-
-.header-audio-tools {
-  display: flex;
-  align-items: center;
-  flex: 0 0 auto;
-}
 
 .nav-btn {
   font-family: var(--font-display);
@@ -328,6 +325,8 @@ body {
 .main {
   max-width: 1000px;
   margin: 0 auto;
+  width: 100%;
+  flex: 1 0 auto;
   padding: 26px 18px 100px;
 }
 
@@ -1361,6 +1360,14 @@ select option { background: #2a1a66; }
   margin-bottom: 2px;
   text-shadow: 0 2px 0 var(--ink);
 }
+.couple-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.couple-actions .btn { flex: 0 0 auto; }
+.couple-actions .score-hint { margin-top: 0; text-align: left; }
 
 .result-preview {
   background: rgba(255, 255, 255, 0.08);
@@ -1499,7 +1506,6 @@ select option { background: #2a1a66; }
   .header-inner { flex-direction: column; align-items: stretch; gap: 9px; }
   .header-brand { justify-content: space-between; padding-right: 50px; }
   .nav { justify-content: flex-start; width: 100%; padding: 0 2px 4px; }
-  .header-audio-tools { position: absolute; top: 13px; right: 18px; }
   .logo { font-size: 1.35rem; }
   .nav-btn { padding: 8px 11px; font-size: 0.8rem; }
   .page-header h2 { font-size: 1.55rem; }
@@ -1522,6 +1528,8 @@ select option { background: #2a1a66; }
   .footer-inner { align-items: stretch; flex-direction: column; gap: 12px; padding: 16px 18px 20px; }
   .footer-brand { text-align: center; }
   .footer-sync-tools { justify-content: center; }
+  .couple-actions { align-items: stretch; flex-direction: column; }
+  .couple-actions .btn { width: 100%; }
 }
 
 @media (max-width: 420px) {
