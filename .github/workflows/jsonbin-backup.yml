@@ -1,0 +1,30 @@
+name: JSONBin Backup
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download JSONBin
+        env:
+          JSONBIN_BIN_ID: ${{ secrets.JSONBIN_BIN_ID }}
+          JSONBIN_API_KEY: ${{ secrets.JSONBIN_API_KEY }}
+        run: |
+          mkdir -p backups
+          curl -fsS \
+            -H "X-Access-Key: $JSONBIN_API_KEY" \
+            "https://api.jsonbin.io/v3/b/$JSONBIN_BIN_ID/latest" \
+            -o "backups/$(date -u +%Y-%m-%d).json"
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: jsonbin-backup-${{ github.run_id }}
+          path: backups/
+          retention-days: 10
