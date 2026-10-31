@@ -154,15 +154,16 @@ body {
 }
 
 .logo {
-  font-family: var(--font-display);
-  font-size: 1.4rem;
-  font-weight: 400;
-  letter-spacing: 0.02em;
   display: flex;
   align-items: center;
-  gap: 8px;
-  color: #fff;
-  text-shadow: 0 3px 0 var(--ink), 0 0 14px rgba(0, 0, 0, 0.35);
+  margin: 0;
+}
+.logo-image {
+  display: block;
+  width: clamp(175px, 24vw, 245px);
+  height: auto;
+  max-height: 92px;
+  object-fit: contain;
 }
 
 .logo-ball {
@@ -1722,7 +1723,7 @@ select option { background: #2a1a66; }
     box-shadow: 0 -5px 0 rgba(27, 13, 61, 0.45);
     backdrop-filter: blur(12px);
   }
-  .logo { font-size: 1.35rem; }
+  .logo-image { width: 205px; max-height: 78px; }
   .nav-btn {
     flex: 1 1 0;
     min-width: 0;
@@ -1765,7 +1766,7 @@ select option { background: #2a1a66; }
 @media (max-width: 420px) {
   .main { padding: 20px 12px 72px; }
   .header-inner { padding: 10px 12px; }
-  .logo { font-size: 1.18rem; gap: 5px; }
+  .logo-image { width: 175px; max-height: 66px; }
   .logo-tag { font-size: 0.62rem; padding: 3px 7px; }
   .nav { gap: 4px; padding-left: 4px; padding-right: 4px; }
   .nav-btn { padding-left: 2px; padding-right: 2px; font-size: 0.68rem; }
