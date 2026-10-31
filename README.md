@@ -50,6 +50,17 @@ La Function viene pubblicata insieme al sito: `functions/api/sync.js` diventa l'
 
 Il vecchio workflow GitHub Pages (`.github/workflows/deploy.yml`) resta nel repository per riferimento, ma non è il percorso di deploy attivo e non fornisce il proxy server-side per i secret.
 
+### Avvio locale con Wrangler
+
+Wrangler è già installato nel progetto. Per avviare anche la Function `/api/sync`:
+
+1. Copia `.env.example` in `.env`.
+2. Inserisci in `.env` gli stessi valori di `JSONBIN_BIN_ID` e `JSONBIN_API_KEY` configurati su Cloudflare.
+3. Avvia il server con `wrangler pages dev .`.
+4. Apri `http://localhost:8788`.
+
+Il file `.env` è escluso da Git e non deve essere pubblicato o condiviso. Wrangler carica automaticamente questo file durante `pages dev`.
+
 ---
 
 ## 🧮 Algoritmo ELO

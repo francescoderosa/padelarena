@@ -1,0 +1,6 @@
+name = "controvetro-pro-league"
+compatibility_date = "2026-05-03"
+pages_build_output_dir = "."
+
+[secrets]
+required = ["JSONBIN_BIN_ID", "JSONBIN_API_KEY"]

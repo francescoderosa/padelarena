@@ -155,8 +155,17 @@ function launchConfetti() {
   const canvas = document.getElementById('fx-canvas');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  if (!ctx) return;
+
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const width = Math.max(1, Math.floor(window.innerWidth));
+  const height = Math.max(1, Math.floor(window.innerHeight));
+  canvas.width = Math.floor(width * dpr);
+  canvas.height = Math.floor(height * dpr);
+  canvas.style.width = `${width}px`;
+  canvas.style.height = `${height}px`;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  canvas.classList.add('is-active');
 
   const colors = ['#00f0ff', '#00ff88', '#ff0055', '#ffe600', '#9d00ff', '#ffffff'];
   const particles = [];
@@ -164,8 +173,8 @@ function launchConfetti() {
 
   for (let i = 0; i < count; i++) {
     particles.push({
-      x: canvas.width / 2 + (Math.random() - 0.5) * 260,
-      y: canvas.height * 0.42,
+      x: width / 2 + (Math.random() - 0.5) * 260,
+      y: height * 0.42,
       vx: (Math.random() - 0.5) * 16,
       vy: (Math.random() - 0.75) * 19,
       size: Math.random() * 8 + 4,
@@ -178,7 +187,7 @@ function launchConfetti() {
   }
 
   function frame() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(0, 0, width, height);
     let active = false;
 
     particles.forEach(p => {
@@ -203,7 +212,10 @@ function launchConfetti() {
     });
 
     if (active) requestAnimationFrame(frame);
-    else ctx.clearRect(0, 0, canvas.width, canvas.height);
+    else {
+      ctx.clearRect(0, 0, width, height);
+      canvas.classList.remove('is-active');
+    }
   }
   requestAnimationFrame(frame);
 }
@@ -501,8 +513,37 @@ function showToast(msg, type = 'success') {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const escHtml = s => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const pName   = id => { const p = state.players.find(x => x.id === id); return p ? `${p.emoji||'🎾'} ${escHtml(p.name)}` : '?'; };
+const getPlayer = id => state.players.find(x => x.id === id);
+const pName = id => { const p = getPlayer(id); return p ? `${p.emoji||'🎾'} ${escHtml(p.name)}` : '?'; };
 const fmtDate = d => d ? new Date(d+'T00:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'}) : '';
+
+function playerImageMarkup(player, type = 'full', className = '') {
+  if (!player) return '<span class="player-image-fallback">👤</span>';
+  const suffix = type === 'closeup' ? 'closeup' : 'full';
+  const src = `assets/players/${encodeURIComponent(player.id)}_${suffix}.png`;
+  const fallback = escHtml(player.emoji || '👤');
+  return `<img class="${className}" src="${src}" alt="" aria-hidden="true" onload="this.nextElementSibling.hidden=true;this.nextElementSibling.style.display='none'" onerror="this.hidden=true;this.nextElementSibling.hidden=false;this.nextElementSibling.style.display='inline-flex'"><span class="player-image-fallback" hidden style="display:none">${fallback}</span>`;
+}
+
+function teamPlayersMarkup(ids, className = '') {
+  return ids.map(id => {
+    const player = getPlayer(id);
+    return `<div class="match-player ${className}">
+      <span class="match-player-figure">${playerImageMarkup(player, 'full')}</span>
+      <span>${player ? escHtml(player.name) : '?'}</span>
+    </div>`;
+  }).join('');
+}
+
+function teamPreviewMarkup(ids, teamClass) {
+  return `<div class="result-team ${teamClass}">${ids.map(id => {
+    const player = getPlayer(id);
+    return `<div class="result-player">
+      <span class="result-player-figure">${playerImageMarkup(player, 'full')}</span>
+      <span>${player ? escHtml(player.name) : '?'}</span>
+    </div>`;
+  }).join('')}</div>`;
+}
 
 // ── RANKING (FIGHTING GAME ROSTER STYLE) ──────────────────────────────────────
 function buildPlayerStats() {
@@ -546,7 +587,7 @@ function renderRanking() {
       <div class="rank-card ${pos<=3?'rank-'+pos:''}">
         <div class="rank-pos">${medal}</div>
         <div class="rank-avatar-wrap">
-          <div class="rank-emoji">${p.emoji||'🎾'}</div>
+          ${playerImageMarkup(p, 'full', 'rank-player-image')}
         </div>
         <div class="rank-info">
           <div class="rank-name-row">
@@ -627,14 +668,14 @@ function renderMatchCard(m, isOngoing) {
       <div class="match-teams">
         <div class="match-team match-team-a">
           <div class="match-team-name team-a-label">🔵 TEAM BLUE</div>
-          <div class="match-players">${m.teamA.map(id=>`<div class="match-player">${pName(id)}</div>`).join('')}</div>
+          <div class="match-players">${teamPlayersMarkup(m.teamA)}</div>
         </div>
         <div class="vs-divider">
           ${scoreTxt}
         </div>
         <div class="match-team match-team-b">
           <div class="match-team-name team-b-label">🔴 TEAM RED</div>
-          <div class="match-players">${m.teamB.map(id=>`<div class="match-player">${pName(id)}</div>`).join('')}</div>
+          <div class="match-players">${teamPlayersMarkup(m.teamB)}</div>
         </div>
       </div>
     </div>`;
@@ -765,9 +806,9 @@ function openResultModal(matchId) {
   document.getElementById('result-scoreB').value = m.scoreB ?? 0;
 
   const preview = document.getElementById('result-teams-preview');
-  const teamANames = m.teamA.map(pName).join(' + ');
-  const teamBNames = m.teamB.map(pName).join(' + ');
-  preview.innerHTML = `🔵 ${teamANames}<br><span style="color:var(--neon-pink);font-size:1.1rem;font-weight:900;font-style:italic">VS</span><br>🔴 ${teamBNames}`;
+  preview.innerHTML = `${teamPreviewMarkup(m.teamA, 'result-team-a')}
+    <span class="result-vs">VS</span>
+    ${teamPreviewMarkup(m.teamB, 'result-team-b')}`;
 
   openModal('modal-result');
 }
@@ -826,7 +867,7 @@ function renderPlayers() {
     const tier = getPlayerTier(p.elo);
     return `
     <div class="player-card">
-      <div class="player-avatar">${p.emoji||'🎾'}</div>
+      <div class="player-avatar">${playerImageMarkup(p, 'closeup', 'player-closeup-image')}</div>
       <div class="player-card-name">${escHtml(p.name)}</div>
       <span class="rank-tier-badge ${tier.class}">${tier.icon} ${tier.name}</span>
       <div class="player-card-elo">⚡ ${p.elo} ELO</div>
@@ -1135,9 +1176,9 @@ function openMatchupResultModal(tid, muId) {
   document.getElementById('result-scoreA').value = mu.scoreA ?? 0;
   document.getElementById('result-scoreB').value = mu.scoreB ?? 0;
 
-  const nameA = m.teamA.map(id=>{const p=state.players.find(x=>x.id===id);return p?`${p.emoji||'🎾'} ${p.name}`:'?';}).join(' + ');
-  const nameB = m.teamB.map(id=>{const p=state.players.find(x=>x.id===id);return p?`${p.emoji||'🎾'} ${p.name}`:'?';}).join(' + ');
-  document.getElementById('result-teams-preview').innerHTML = `🔵 ${escHtml(nameA)}<br><span style="color:var(--neon-pink);font-size:1.1rem;font-weight:900;font-style:italic">VS</span><br>🔴 ${escHtml(nameB)}`;
+  document.getElementById('result-teams-preview').innerHTML = `${teamPreviewMarkup(m.teamA, 'result-team-a')}
+    <span class="result-vs">VS</span>
+    ${teamPreviewMarkup(m.teamB, 'result-team-b')}`;
 
   openModal('modal-result');
 }
