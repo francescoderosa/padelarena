@@ -601,11 +601,17 @@ body {
   position: relative;
   box-shadow: var(--shadow-hard);
   transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.2s ease;
+  cursor: pointer;
 }
 .rank-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 10px 0 #1b0d3d;
   background: var(--bg-surface-2);
+}
+.rank-card:focus-visible,
+.player-card:focus-visible {
+  outline: 4px solid var(--bs-yellow);
+  outline-offset: 4px;
 }
 
 .rank-card.rank-1 {
@@ -673,18 +679,16 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 72px;
-  height: 88px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.14);
-  border: 3px solid var(--ink);
+  width: clamp(78px, 9vw, 116px);
+  height: clamp(104px, 12vw, 148px);
+  background: transparent;
   flex-shrink: 0;
 }
 .rank-card.rank-1 .rank-avatar-wrap,
 .rank-card.rank-2 .rank-avatar-wrap,
 .rank-card.rank-3 .rank-avatar-wrap {
-  background: #fff;
-  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.12);
+  background: transparent;
+  box-shadow: none;
 }
 .rank-emoji {
   font-size: 2.1rem;
@@ -1155,6 +1159,7 @@ body {
   text-align: center;
   box-shadow: var(--shadow-hard);
   transition: transform 0.16s ease, box-shadow 0.16s ease, background 0.2s ease;
+  cursor: pointer;
 }
 .player-card:hover {
   background: var(--bg-surface-2);
@@ -1210,6 +1215,7 @@ body {
 .modal-overlay.hidden { display: none !important; }
 
 #modal-match, #modal-tournament, #modal-tourn-detail, #modal-player { z-index: 200; }
+#modal-player-detail { z-index: 220; }
 #modal-sync    { z-index: 240; }
 #modal-result  { z-index: 280; }
 #modal-confirm { z-index: 320; }
@@ -1226,6 +1232,92 @@ body {
 }
 .modal-sm   { max-width: 460px; }
 .modal-wide { max-width: 840px; }
+.modal-player-detail { max-width: 620px; }
+
+.player-detail-hero {
+  display: grid;
+  grid-template-columns: minmax(150px, 220px) 1fr;
+  gap: 24px;
+  align-items: center;
+  min-height: 220px;
+}
+.player-detail-image {
+  height: 250px;
+  display: flex;
+  align-items: end;
+  justify-content: center;
+}
+.player-complete-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.player-detail-image .player-image-fallback { font-size: 5rem; }
+.player-detail-summary {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.player-detail-elo {
+  font-family: var(--font-display);
+  font-size: 3.5rem;
+  line-height: 1;
+  color: var(--bs-yellow);
+  text-shadow: 0 3px 0 var(--ink);
+}
+.player-detail-elo small {
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+}
+.player-detail-caption {
+  color: var(--text-dim);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.75rem;
+}
+.player-detail-section-title {
+  font-family: var(--font-display);
+  color: #fff;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+}
+.player-detail-stats {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.player-detail-stat {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  padding: 10px 6px;
+  text-align: center;
+}
+.player-detail-stat strong,
+.player-detail-stat span { display: block; }
+.player-detail-stat strong {
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+}
+.player-detail-stat span {
+  color: var(--text-dim);
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+.player-detail-stat.stat-win strong,
+.player-detail-stat.stat-rate strong { color: var(--bs-green); }
+.player-detail-stat.stat-loss strong { color: var(--bs-red); }
+.player-detail-note {
+  margin: 0;
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  text-align: center;
+}
 
 .modal-header {
   padding: 16px 22px;
@@ -1652,9 +1744,13 @@ select option { background: #2a1a66; }
   .tourn-table  { font-size: 0.82rem; }
   .sync-actions-row { grid-template-columns: 1fr; }
   .rank-card { padding: 12px 14px; gap: 10px; }
-  .rank-avatar-wrap { width: 58px; height: 72px; }
+  .rank-avatar-wrap { width: 66px; height: 86px; }
   .rank-name { font-size: 1.05rem; }
   .rank-elo { font-size: 1.5rem; }
+  .player-detail-hero { grid-template-columns: 1fr 1fr; gap: 12px; }
+  .player-detail-image { height: 190px; }
+  .player-detail-elo { font-size: 2.6rem; }
+  .player-detail-stats { grid-template-columns: repeat(3, 1fr); }
   .match-teams { gap: 8px; }
   .match-card { padding: 14px; }
   .modal-footer { justify-content: stretch; }

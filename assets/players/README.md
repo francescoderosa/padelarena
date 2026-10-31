@@ -11,6 +11,7 @@ JSON.parse(localStorage.getItem('padelRanking_v2')).players
 
 - `<id>_full.png`: transparent full-body image, used in ranking and match/result views.
 - `<id>_closeup.png`: close-up image, used in the Roster circular avatar.
+- `<id>_complete.png`: optional complete image, used in the player detail modal.
 
 Recommended source preparation:
 

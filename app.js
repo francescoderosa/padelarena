@@ -519,7 +519,7 @@ const fmtDate = d => d ? new Date(d+'T00:00:00').toLocaleDateString('it-IT',{day
 
 function playerImageMarkup(player, type = 'full', className = '') {
   if (!player) return '<span class="player-image-fallback">👤</span>';
-  const suffix = type === 'closeup' ? 'closeup' : 'full';
+  const suffix = ['closeup', 'complete'].includes(type) ? type : 'full';
   const src = `assets/players/${encodeURIComponent(player.id)}_${suffix}.png`;
   const fallback = escHtml(player.emoji || '👤');
   return `<img class="${className}" src="${src}" alt="" aria-hidden="true" onload="this.nextElementSibling.hidden=true;this.nextElementSibling.style.display='none'" onerror="this.hidden=true;this.nextElementSibling.hidden=false;this.nextElementSibling.style.display='inline-flex'"><span class="player-image-fallback" hidden style="display:none">${fallback}</span>`;
@@ -584,7 +584,7 @@ function renderRanking() {
     const powerPct = Math.min(100, Math.max(10, Math.round(((p.elo - 800) / 450) * 100)));
 
     return `
-      <div class="rank-card ${pos<=3?'rank-'+pos:''}">
+      <div class="rank-card ${pos<=3?'rank-'+pos:''}" data-player-detail="${p.id}" tabindex="0" role="button" aria-label="Apri il profilo di ${escHtml(p.name)}">
         <div class="rank-pos">${medal}</div>
         <div class="rank-avatar-wrap">
           ${playerImageMarkup(p, 'full', 'rank-player-image')}
@@ -610,6 +610,21 @@ function renderRanking() {
         </div>
       </div>`;
   }).join('');
+  bindPlayerDetailEvents(container);
+}
+
+function bindPlayerDetailEvents(container) {
+  container.querySelectorAll('[data-player-detail]').forEach(card => {
+    card.addEventListener('click', e => {
+      if (e.target.closest('button, a, input, select, textarea')) return;
+      openPlayerDetail(card.dataset.playerDetail);
+    });
+    card.addEventListener('keydown', e => {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      e.preventDefault();
+      openPlayerDetail(card.dataset.playerDetail);
+    });
+  });
 }
 
 // ── MATCHES / BATTLES ────────────────────────────────────────────────────────
@@ -866,7 +881,7 @@ function renderPlayers() {
   c.innerHTML = state.players.map(p => {
     const tier = getPlayerTier(p.elo);
     return `
-    <div class="player-card">
+    <div class="player-card" data-player-detail="${p.id}" tabindex="0" role="button" aria-label="Apri il profilo di ${escHtml(p.name)}">
       <div class="player-avatar">${playerImageMarkup(p, 'closeup', 'player-closeup-image')}</div>
       <div class="player-card-name">${escHtml(p.name)}</div>
       <span class="rank-tier-badge ${tier.class}">${tier.icon} ${tier.name}</span>
@@ -880,6 +895,41 @@ function renderPlayers() {
 
   c.querySelectorAll('[data-edit-player]').forEach(b => b.addEventListener('click', () => openEditPlayer(b.dataset.editPlayer)));
   c.querySelectorAll('[data-del-player]').forEach(b  => b.addEventListener('click', () => confirmDelete('giocatore', () => deletePlayer(b.dataset.delPlayer))));
+  bindPlayerDetailEvents(c);
+}
+
+function openPlayerDetail(id) {
+  const player = getPlayer(id);
+  if (!player) return;
+
+  const stats = buildPlayerStats()[id] || { wins: 0, losses: 0, draws: 0, played: 0 };
+  const winRate = stats.played ? Math.round(stats.wins / stats.played * 100) : 0;
+  const tier = getPlayerTier(player.elo);
+  const body = document.getElementById('player-detail-body');
+  if (!body) return;
+
+  document.getElementById('modal-player-detail-title').textContent = `${player.emoji || '🎾'} ${player.name}`;
+  body.innerHTML = `
+    <div class="player-detail-hero">
+      <div class="player-detail-image">
+        ${playerImageMarkup(player, 'complete', 'player-complete-image')}
+      </div>
+      <div class="player-detail-summary">
+        <span class="rank-tier-badge ${tier.class}">${tier.icon} ${tier.name}</span>
+        <div class="player-detail-elo">${player.elo} <small>ELO</small></div>
+        <span class="player-detail-caption">Profilo giocatore</span>
+      </div>
+    </div>
+    <div class="player-detail-section-title">Statistiche disponibili</div>
+    <div class="player-detail-stats">
+      <div class="player-detail-stat"><strong>${stats.played}</strong><span>Partite</span></div>
+      <div class="player-detail-stat stat-win"><strong>${stats.wins}</strong><span>Vittorie</span></div>
+      <div class="player-detail-stat stat-loss"><strong>${stats.losses}</strong><span>Sconfitte</span></div>
+      <div class="player-detail-stat"><strong>${stats.draws}</strong><span>Pareggi</span></div>
+      <div class="player-detail-stat stat-rate"><strong>${winRate}%</strong><span>Win rate</span></div>
+    </div>
+    <p class="player-detail-note">Le statistiche avanzate saranno aggiunte quando verranno definite.</p>`;
+  openModal('modal-player-detail');
 }
 
 function initPlayerModal() {
