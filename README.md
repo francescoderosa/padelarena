@@ -13,6 +13,24 @@ PWA moderna per gestire partite di padel, serate a torneo e classifica ELO condi
 
 ---
 
+## 🖼️ Rimozione dello sfondo dalle immagini
+
+Per rimuovere lo sfondo con `rembg` ed esportare un PNG trasparente:
+
+```bash
+rembg i "/percorso/immagine_input.png" "/percorso/immagine_transparent.png"
+```
+
+Esempio:
+
+```bash
+rembg i "/Users/francesco.derosa/Downloads/brawlers/lele_full.png" "/Users/francesco.derosa/Downloads/brawlers/lele_full_transparent.png"
+```
+
+Il file di destinazione viene creato in formato PNG RGBA con il canale alpha per la trasparenza.
+
+---
+
 ## ☁️ Sincronizzazione Multi-dispositivo
 
 La sincronizzazione condivisa usa **JSONBin.io** tramite una **Cloudflare Pages Function** (`/api/sync`). Il frontend non contiene credenziali e la modale Cloud Sync gestisce solo la preferenza di auto-sync.
