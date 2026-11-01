@@ -929,7 +929,24 @@ function openPlayerDetail(id) {
       <div class="player-detail-stat stat-rate"><strong>${winRate}%</strong><span>Win rate</span></div>
     </div>
     <p class="player-detail-note">Le statistiche avanzate saranno aggiunte quando verranno definite.</p>`;
+  const detailImage = body.querySelector('.player-detail-image');
+  detailImage.setAttribute('role', 'button');
+  detailImage.setAttribute('tabindex', '0');
+  detailImage.setAttribute('aria-label', `Ingrandisci l'immagine di ${player.name}`);
+  detailImage.addEventListener('click', () => openPlayerImageFullscreen(player));
+  detailImage.addEventListener('keydown', event => {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    event.preventDefault();
+    openPlayerImageFullscreen(player);
+  });
   openModal('modal-player-detail');
+}
+
+function openPlayerImageFullscreen(player) {
+  const body = document.getElementById('player-image-fullscreen-body');
+  if (!body) return;
+  body.innerHTML = playerImageMarkup(player, 'complete', 'player-fullscreen-image');
+  openModal('modal-player-image');
 }
 
 function initPlayerModal() {
@@ -1235,11 +1252,13 @@ function openMatchupResultModal(tid, muId) {
 
 // ── TOURNAMENT MODAL BUILDER ─────────────────────────────────────────────────
 let tournCoupleCount = 4;
+let selectedTournamentPlayerIds = [];
 
 function initTournamentModal() {
   document.getElementById('btn-new-tournament').addEventListener('click', openNewTournamentModal);
   document.getElementById('btn-save-tournament').addEventListener('click', saveTournament);
   document.getElementById('btn-suggest-couples').addEventListener('click', suggestCouples);
+  document.getElementById('btn-confirm-player-selection').addEventListener('click', confirmPlayerSelection);
 
   initToggle('tourn-type-toggle', () => {});
 }
@@ -1249,6 +1268,7 @@ function openNewTournamentModal() {
   document.getElementById('tourn-name').value = '';
   document.getElementById('tourn-date').value = todayStr();
   setToggleVal('tourn-type-toggle', 'games');
+  selectedTournamentPlayerIds = [];
   tournCoupleCount = 4;
   rebuildCouplesUI();
   updateMatchupPreview();
@@ -1280,9 +1300,53 @@ function suggestCouples() {
     return showToast('Servono almeno 8 giocatori per suggerire 4 coppie', 'error');
   }
 
-  const rankedPlayers = [...state.players]
+  selectedTournamentPlayerIds = [];
+  renderPlayerSelection();
+  openModal('modal-player-selection');
+}
+
+function renderPlayerSelection() {
+  const list = document.getElementById('player-selection-list');
+  const count = document.getElementById('player-selection-count');
+  const confirm = document.getElementById('btn-confirm-player-selection');
+  if (!list || !count || !confirm) return;
+
+  list.innerHTML = [...state.players]
     .sort((a, b) => (b.elo || ELO_DEFAULT) - (a.elo || ELO_DEFAULT))
-    .slice(0, 8);
+    .map(player => `
+      <label class="player-selection-card">
+        <input type="checkbox" value="${player.id}">
+        <span class="player-selection-check" aria-hidden="true">✓</span>
+        <span class="player-selection-avatar">${playerImageMarkup(player, 'closeup')}</span>
+        <span class="player-selection-name">${escHtml(player.name)}</span>
+        <span class="player-selection-elo">${player.elo} ELO</span>
+      </label>`).join('');
+
+  const updateSelection = () => {
+    selectedTournamentPlayerIds = [...list.querySelectorAll('input:checked')].map(input => input.value);
+    count.textContent = `${selectedTournamentPlayerIds.length} / 8`;
+    count.classList.toggle('selection-complete', selectedTournamentPlayerIds.length === 8);
+    confirm.disabled = selectedTournamentPlayerIds.length !== 8;
+  };
+  list.querySelectorAll('input').forEach(input => input.addEventListener('change', () => {
+    if (input.checked && selectedTournamentPlayerIds.length >= 8) {
+      input.checked = false;
+      return;
+    }
+    updateSelection();
+    playSfx('click');
+  }));
+  updateSelection();
+}
+
+function confirmPlayerSelection() {
+  if (selectedTournamentPlayerIds.length !== 8) {
+    return showToast('Seleziona esattamente 8 giocatori', 'error');
+  }
+
+  const rankedPlayers = selectedTournamentPlayerIds.map(id => getPlayer(id))
+    .filter(Boolean)
+    .sort((a, b) => (b.elo || ELO_DEFAULT) - (a.elo || ELO_DEFAULT));
 
   rebuildCouplesUI();
   const rows = document.querySelectorAll('.couple-row');
@@ -1293,6 +1357,7 @@ function suggestCouples() {
     row.querySelector('.couple-p2').value = bottomPlayer.id;
   });
   updateMatchupPreview();
+  closeModal('modal-player-selection');
   playSfx('click');
   showToast('✨ Coppie bilanciate suggerite in base al ranking');
 }

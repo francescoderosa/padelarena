@@ -277,6 +277,29 @@
   </div>
 </div>
 
+<!-- ===== MODAL: PLAYER SELECTION FOR SUGGESTED COUPLES ===== -->
+<div id="modal-player-selection" class="modal-overlay hidden">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h3>👥 Scegli gli 8 giocatori</h3>
+      <button class="modal-close" data-close="modal-player-selection">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="selection-intro">
+        <span>Seleziona i partecipanti da usare per le coppie bilanciate.</span>
+        <strong id="player-selection-count">0 / 8</strong>
+      </div>
+      <div id="player-selection-list" class="player-selection-list"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="modal-player-selection">Annulla</button>
+      <button class="btn btn-primary btn-arcade" id="btn-confirm-player-selection" disabled>
+        <span>GENERA COPPIE</span>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAL: ADD/EDIT PLAYER ===== -->
 <div id="modal-player" class="modal-overlay hidden">
   <div class="modal modal-sm">
@@ -315,6 +338,14 @@
     <div class="modal-footer">
       <button class="btn btn-secondary" data-close="modal-player-detail">Chiudi</button>
     </div>
+  </div>
+</div>
+
+<!-- ===== MODAL: FULLSCREEN PLAYER IMAGE ===== -->
+<div id="modal-player-image" class="modal-overlay modal-image-overlay hidden">
+  <div class="player-image-fullscreen" role="dialog" aria-label="Immagine giocatore ingrandita">
+    <button class="modal-close modal-image-close" data-close="modal-player-image" aria-label="Chiudi immagine">✕</button>
+    <div id="player-image-fullscreen-body"></div>
   </div>
 </div>
 
