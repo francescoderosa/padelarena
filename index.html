@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=4.11" />
+  <link rel="stylesheet" href="style.css?v=4.12" />
 </head>
 <body>
 <div class="cyber-bg-lines"></div>
@@ -136,25 +136,15 @@
     </div>
     <div class="modal-body">
 
-      <!-- Match type -->
-      <div class="form-group">
-        <label>Tipo di Punteggio</label>
-        <div class="toggle-group" id="match-type-toggle">
-          <button class="toggle-btn active" data-val="sets">🎾 Al Meglio dei Set</button>
-          <button class="toggle-btn" data-val="games">🏃 Conteggio Games</button>
-        </div>
-      </div>
-
-      <!-- Teams -->
+       <!-- Teams -->
       <div class="teams-grid">
         <div class="team-card team-a">
-          <div class="team-label">🔵 SQUADRA A</div>
-          <div class="player-select-group">
-            <label>Player 1</label>
+           <div class="player-select-group">
+             <label>Giocatore 1</label>
             <select id="teamA1"><option value="">— Seleziona —</option></select>
           </div>
           <div class="player-select-group">
-            <label>Player 2</label>
+             <label>Giocatore 2</label>
             <select id="teamA2"><option value="">— Seleziona —</option></select>
           </div>
         </div>
@@ -162,13 +152,12 @@
           <span class="vs-text">VS</span>
         </div>
         <div class="team-card team-b">
-          <div class="team-label">🔴 SQUADRA B</div>
-          <div class="player-select-group">
-            <label>Player 1</label>
+           <div class="player-select-group">
+             <label>Giocatore 1</label>
             <select id="teamB1"><option value="">— Seleziona —</option></select>
           </div>
           <div class="player-select-group">
-            <label>Player 2</label>
+             <label>Giocatore 2</label>
             <select id="teamB2"><option value="">— Seleziona —</option></select>
           </div>
         </div>
@@ -176,19 +165,9 @@
 
       <!-- Score -->
       <div class="score-section" id="score-section">
-        <h4 id="score-section-title">Risultato Finale</h4>
-        <div class="score-input-row">
-          <div class="score-box">
-            <label>🔵 A</label>
-            <input type="number" id="scoreA" min="0" max="99" value="0" />
-          </div>
-          <div class="score-sep">—</div>
-          <div class="score-box">
-            <label>🔴 B</label>
-            <input type="number" id="scoreB" min="0" max="99" value="0" />
-          </div>
-        </div>
-        <p class="score-hint" id="score-hint">Inserisci i set vinti da ogni squadra</p>
+         <h4 id="score-section-title">Risultato per set</h4>
+         <div id="match-set-inputs" class="set-inputs"></div>
+         <p class="score-hint" id="score-hint">Inserisci il punteggio dei set (es. 6-3, 6-4, 4-6)</p>
       </div>
 
       <!-- Date + status -->
@@ -349,6 +328,20 @@
   </div>
 </div>
 
+<!-- ===== MODAL: MATCH DETAIL ===== -->
+<div id="modal-match-detail" class="modal-overlay hidden">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h3 id="match-detail-title">🎾 Dettaglio partita</h3>
+      <button class="modal-close" data-close="modal-match-detail">✕</button>
+    </div>
+    <div class="modal-body" id="match-detail-body"></div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" data-close="modal-match-detail">Chiudi</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAL: ENTER RESULT (Nested on top) ===== -->
 <div id="modal-result" class="modal-overlay hidden">
   <div class="modal modal-sm">
@@ -356,28 +349,30 @@
       <h3>⚡ Registra Risultato</h3>
       <button class="modal-close" data-close="modal-result">✕</button>
     </div>
-    <div class="modal-body">
-      <div id="result-teams-preview" class="result-preview"></div>
-      <div class="score-section">
-        <div class="score-input-row">
-          <div class="score-box">
-            <label>🔵 A</label>
-            <input type="number" id="result-scoreA" min="0" max="99" value="0" />
-          </div>
-          <div class="score-sep">—</div>
-          <div class="score-box">
-            <label>🔴 B</label>
-            <input type="number" id="result-scoreB" min="0" max="99" value="0" />
+      <div class="modal-body">
+        <div id="result-teams-preview" class="result-preview"></div>
+        <div class="result-status-row">
+          <label>Stato partita</label>
+          <div class="toggle-group" id="result-status-toggle">
+            <button class="toggle-btn" data-val="ongoing">In corso</button>
+            <button class="toggle-btn active" data-val="completed">Completata</button>
           </div>
         </div>
-        <p class="score-hint" id="result-score-hint">Punteggio ottenuto</p>
-      </div>
+        <div class="score-section">
+         <div id="result-set-inputs" class="set-inputs"></div>
+         <div id="result-legacy-score" class="score-input-row hidden">
+           <div class="score-box"><label>🔵 A</label><input type="number" id="result-scoreA" min="0" max="99" value="0" /></div>
+           <div class="score-sep">—</div>
+           <div class="score-box"><label>🔴 B</label><input type="number" id="result-scoreB" min="0" max="99" value="0" /></div>
+         </div>
+         <p class="score-hint" id="result-score-hint">Inserisci il punteggio dei set</p>
+       </div>
       <input type="hidden" id="result-match-id" />
     </div>
     <div class="modal-footer">
       <button class="btn btn-secondary" data-close="modal-result">Annulla</button>
       <button class="btn btn-primary btn-arcade" id="btn-save-result">
-        <span>CONFERMA VITTORIA</span>
+         <span>CONFERMA</span>
       </button>
     </div>
   </div>
@@ -454,6 +449,6 @@
 
 <div id="toast" class="toast hidden"></div>
 
-<script src="app.js?v=4.11"></script>
+<script src="app.js?v=4.12"></script>
 </body>
 </html>
