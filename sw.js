@@ -1,5 +1,5 @@
-const CACHE_NAME = 'controvetro-v4.11';
-const ASSETS = ['./', './index.html', './style.css?v=4.11', './app.js?v=4.11', './manifest.json', './assets/logo-controvetro.png', './icons/icon-192.png', './icons/icon-512.png'];
+const CACHE_NAME = 'controvetro-v4.12';
+const ASSETS = ['./', './index.html', './style.css?v=4.12', './app.js?v=4.12', './manifest.json', './assets/logo-controvetro.png', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
