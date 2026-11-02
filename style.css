@@ -1005,6 +1005,29 @@ body {
   background: linear-gradient(135deg, #4b37a3, #5a45b8);
   box-shadow: 0 7px 0 #1b0d3d, 0 0 0 3px rgba(255, 217, 61, 0.35);
 }
+.tourn-card.has-winners .tourn-header {
+  min-height: 158px;
+  padding-right: 220px;
+}
+.tourn-winners {
+  position: absolute;
+  top: 14px;
+  right: 20px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  width: 190px;
+  height: 158px;
+  z-index: 1;
+}
+.tourn-winner-image {
+  width: 84px;
+  height: 150px;
+  object-fit: contain;
+  object-position: bottom center;
+  filter: drop-shadow(2px 2px 0 var(--ink));
+}
 
 .tourn-header {
   display: flex;
@@ -1109,6 +1132,32 @@ body {
   color: var(--bs-yellow);
   text-shadow: 0 2px 0 var(--ink);
 }
+.tourn-table .t-elo {
+  font-family: var(--font-display);
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.tourn-table .t-elo.positive { color: var(--bs-green); }
+.tourn-table .t-elo.negative { color: var(--bs-pink); }
+.tourn-table .t-diff { white-space: nowrap; }
+.t-record-values { display: none; }
+.couple-player-name { display: inline-block; line-height: 1.25; }
+.couple-initials { display: none; }
+.player-detail-link {
+  display: inline-block;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.player-detail-link:hover,
+.player-detail-link:focus-visible {
+  color: var(--bs-yellow);
+  text-decoration: underline;
+}
 
 .matchup-grid {
   display: flex;
@@ -1141,6 +1190,9 @@ body {
   min-width: 64px;
   text-align: center;
 }
+.matchup-score-win { color: var(--neon-cyan); }
+.matchup-score-loss { color: var(--bs-red); }
+.matchup-score-draw { color: var(--text-main); }
 
 /* ── PLAYERS ────────────────────────────────────────────────── */
 .players-list {
@@ -1827,8 +1879,21 @@ select option { background: #2a1a66; }
   .vs-divider { margin: 4px 0; }
   .form-row   { grid-template-columns: 1fr; }
   .players-list { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
-  .matchup-row  { font-size: 0.82rem; padding: 10px; }
-  .tourn-table  { font-size: 0.82rem; }
+  .matchup-row  { grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; font-size: 0.82rem; padding: 10px 8px; gap: 5px; }
+  .matchup-couple { line-height: 1.25; }
+  .tourn-table  { font-size: 0.78rem; table-layout: fixed; }
+  .tourn-table th, .tourn-table td { padding: 8px 4px; }
+  .tourn-table .t-pos { width: 28px; }
+  .tourn-table .t-name { width: 25%; }
+  .tourn-table .t-name .couple-full-name { display: none; }
+  .tourn-table .t-name .couple-initials { display: inline; font-family: var(--font-display); letter-spacing: 0.04em; }
+  .tourn-ranking .t-challenges { display: none; }
+  .tourn-ranking .t-record-full { display: none; }
+  .tourn-ranking .t-record-values { display: inline; }
+  .tourn-table .t-elo, .tourn-table .t-diff { font-size: 0.72rem; }
+  .tourn-card.has-winners .tourn-header { min-height: 112px; padding-right: 126px; }
+  .tourn-winners { right: 8px; top: 10px; width: 112px; height: 112px; gap: 2px; }
+  .tourn-winner-image { width: 52px; height: 108px; }
   .sync-actions-row { grid-template-columns: 1fr; }
   .rank-card { padding: 12px 14px; gap: 10px; }
   .rank-avatar-wrap { width: 104px; height: 140px; }

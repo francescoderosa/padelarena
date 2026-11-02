@@ -81,6 +81,30 @@ Il file `.env` è escluso da Git e non deve essere pubblicato o condiviso. Wrang
 
 ---
 
+## 🧹 Cache e aggiornamento PWA
+
+Il Service Worker (`sw.js`) usa una cache versionata (`CACHE_NAME`), ma per HTML, CSS e JavaScript applica una strategia **network-first**: il browser prova prima a scaricare la versione pubblicata e usa la cache solo come fallback offline. Le richieste a `sw.js` vengono escluse dalla cache, così il worker può aggiornarsi correttamente.
+
+La registrazione usa `updateViaCache: 'none'`:
+
+```js
+navigator.serviceWorker.register('sw.js?v=4.11', { updateViaCache: 'none' });
+```
+
+Il parametro `?v=4.11` è un ulteriore cache busting, ma non deve necessariamente essere incrementato a ogni modifica: il browser controlla comunque il contenuto aggiornato di `sw.js`. La modifica del file è sufficiente per rilevare una nuova versione del Service Worker. Incrementare anche `CACHE_NAME` resta utile per invalidare esplicitamente la cache precedente.
+
+Se un browser ha già installato il vecchio worker cache-first e continua a mostrare file obsoleti, eseguire una sola volta dalla console del sito:
+
+```js
+navigator.serviceWorker.getRegistrations()
+  .then(rs => Promise.all(rs.map(r => r.unregister())))
+  .then(() => caches.keys())
+  .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+  .then(() => location.reload());
+```
+
+---
+
 ## 🧮 Algoritmo ELO
 
 - **Rating iniziale**: 1000 punti

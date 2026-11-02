@@ -19,6 +19,12 @@ const STORE_KEY   = 'padelRanking_v2';
 const SYNC_KEY    = 'padelSync_config_v1';
 const SYNC_ENDPOINT = '/api/sync';
 
+const TOURNAMENT_SCORING = Object.freeze({
+  LEGACY_MATCH_POINTS: 'match-points',
+  GAMES: 'games',
+  SETS: 'sets',
+});
+
 const DEFAULT_SYNC = {
   autoSync: true,
 };
@@ -254,6 +260,19 @@ function saveState(skipCloud = false) {
   }
 }
 
+function normalizeTournamentScoring(tournaments) {
+  const isSingleTestTournament = tournaments.length === 1 && !tournaments[0].scoringMode;
+
+  tournaments.forEach(t => {
+    if (t.scoringMode) return;
+    // L'unica serata già presente è il dataset di test: passa alla nuova metrica Games.
+    t.scoringMode = isSingleTestTournament
+      ? TOURNAMENT_SCORING.GAMES
+      : TOURNAMENT_SCORING.LEGACY_MATCH_POINTS;
+    if (isSingleTestTournament) t.matchType = TOURNAMENT_SCORING.GAMES;
+  });
+}
+
 function loadState() {
   try {
     const raw = localStorage.getItem(STORE_KEY);
@@ -271,6 +290,7 @@ function loadState() {
     if (!m.status) m.status = 'completed';
     if (!m.type)   m.type   = 'sets';
   });
+  normalizeTournamentScoring(state.tournaments);
 }
 
 function updateSyncUI(status, label = '') {
@@ -362,6 +382,8 @@ async function pullFromCloud(options = { silent: false, force: false }) {
       state.matches     = Array.isArray(record.matches)     ? record.matches     : [];
       state.tournaments = Array.isArray(record.tournaments) ? record.tournaments : [];
       state.updatedAt   = cloudUpdatedAt || Date.now();
+
+      normalizeTournamentScoring(state.tournaments);
 
       recomputeAllElo();
       saveState(true);
@@ -516,6 +538,31 @@ const escHtml = s => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replac
 const getPlayer = id => state.players.find(x => x.id === id);
 const pName = id => { const p = getPlayer(id); return p ? `${p.emoji||'🎾'} ${escHtml(p.name)}` : '?'; };
 const fmtDate = d => d ? new Date(d+'T00:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'}) : '';
+
+function playerInitials(name) {
+  const words = (name || '').trim().split(/\s+/).filter(Boolean);
+  if (words.length >= 3) return words.slice(0, 3).map(word => word[0]).join('').toUpperCase();
+  if (words.length === 2) return (words[0][0] + words[1].slice(0, 2)).toUpperCase();
+  return (words[0] || '').slice(0, 3).toUpperCase();
+}
+
+function coupleNamesMarkup(couple, options = {}) {
+  const { initials = false, linked = false } = options;
+  return couple.map(id => {
+    const player = getPlayer(id);
+    const name = player ? player.name : '?';
+    const label = player ? escHtml(name) : '?';
+    const shortName = playerInitials(name);
+    const content = initials
+      ? `<span class="couple-full-name">${label}</span><span class="couple-initials">${shortName}</span>`
+      : label;
+    const tag = linked && player ? 'button' : 'span';
+    const attrs = linked && player
+      ? ` type="button" class="player-detail-link" data-player-detail="${player.id}" title="Apri la scheda di ${label}"`
+      : ' class="couple-player-name"';
+    return `<${tag}${attrs}>${content}</${tag}>`;
+  }).join('<br>');
+}
 
 function playerImageMarkup(player, type = 'full', className = '') {
   if (!player) return '<span class="player-image-fallback">👤</span>';
@@ -1050,12 +1097,23 @@ function computeTournamentRanking(t) {
     sA.played++; sB.played++;
     sA.diff += mu.scoreA - mu.scoreB;
     sB.diff += mu.scoreB - mu.scoreA;
+
+    if (t.scoringMode === TOURNAMENT_SCORING.GAMES || t.scoringMode === TOURNAMENT_SCORING.SETS) {
+      sA.pts += mu.scoreA;
+      sB.pts += mu.scoreB;
+    }
+
     if (mu.scoreA > mu.scoreB) {
-      sA.pts += 3; sA.wins++; sB.losses++;
+      if (t.scoringMode === TOURNAMENT_SCORING.LEGACY_MATCH_POINTS || !t.scoringMode) sA.pts += 3;
+      sA.wins++; sB.losses++;
     } else if (mu.scoreB > mu.scoreA) {
-      sB.pts += 3; sB.wins++; sA.losses++;
+      if (t.scoringMode === TOURNAMENT_SCORING.LEGACY_MATCH_POINTS || !t.scoringMode) sB.pts += 3;
+      sB.wins++; sA.losses++;
     } else {
-      sA.pts += 1; sB.pts += 1; sA.draws++; sB.draws++;
+      if (t.scoringMode === TOURNAMENT_SCORING.LEGACY_MATCH_POINTS || !t.scoringMode) {
+        sA.pts += 1; sB.pts += 1;
+      }
+      sA.draws++; sB.draws++;
     }
   });
 
@@ -1064,6 +1122,33 @@ function computeTournamentRanking(t) {
     if (b.diff !== a.diff) return b.diff - a.diff;
     return b.wins - a.wins;
   });
+}
+
+function computeTournamentEloDeltas(t) {
+  const ratings = Object.fromEntries(state.players.map(p => [p.id, ELO_DEFAULT]));
+  const deltas = {};
+  const matchupByMatchId = new Map(t.matchups.filter(mu => mu.matchId).map(mu => [mu.matchId, mu]));
+  const completed = [...state.matches]
+    .filter(m => m.status === 'completed' && Number.isFinite(m.scoreA) && Number.isFinite(m.scoreB))
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  completed.forEach(m => {
+    const pA = m.teamA.map(id => ({ elo: ratings[id] })).filter(p => Number.isFinite(p.elo));
+    const pB = m.teamB.map(id => ({ elo: ratings[id] })).filter(p => Number.isFinite(p.elo));
+    if (pA.length < 2 || pB.length < 2) return;
+
+    const { deltaA, deltaB } = computeElo(pA, pB, m.scoreA, m.scoreB);
+    const matchup = matchupByMatchId.get(m.id);
+    if (matchup) {
+      deltas[matchup.cA] = (deltas[matchup.cA] || 0) + deltaA;
+      deltas[matchup.cB] = (deltas[matchup.cB] || 0) + deltaB;
+    }
+
+    m.teamA.forEach(id => { if (ratings[id] !== undefined) ratings[id] += deltaA; });
+    m.teamB.forEach(id => { if (ratings[id] !== undefined) ratings[id] += deltaB; });
+  });
+
+  return deltas;
 }
 
 function renderTournaments() {
@@ -1091,20 +1176,16 @@ function renderTournamentCard(t) {
   const isLive = t.status === 'ongoing';
 
   const ranking = computeTournamentRanking(t);
-  const podium = ranking.slice(0,3).map((r,i) => {
-    const couple = t.couples[r.coupleIdx];
-    const names = couple.map(id => { const p=state.players.find(x=>x.id===id); return p?p.name:'?'; }).join(' & ');
-    const m = ['🥇','🥈','🥉'][i];
-    return `<tr>
-      <td class="t-pos">${m}</td>
-      <td class="t-name">${escHtml(names)}</td>
-      <td class="t-pts">${r.pts} PT</td>
-      <td class="t-diff">${r.diff>0?'+':''}${r.diff}</td>
-    </tr>`;
-  }).join('');
+  const winnerCouple = done > 0 && ranking[0] ? t.couples[ranking[0].coupleIdx] : null;
+  const winners = winnerCouple
+    ? `<div class="tourn-winners" title="Coppia in testa">
+         ${winnerCouple.map(id => playerImageMarkup(getPlayer(id), 'full', 'tourn-winner-image')).join('')}
+       </div>`
+    : '';
 
   return `
-    <div class="tourn-card ${isLive?'ongoing':''}">
+    <div class="tourn-card ${isLive?'ongoing':''} ${winnerCouple?'has-winners':''}">
+      ${winners}
       <div class="tourn-header">
         <div>
           <div class="tourn-title">🎯 ${escHtml(t.name)}</div>
@@ -1120,11 +1201,6 @@ function renderTournamentCard(t) {
         <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
         <div class="progress-label">${done}/${total} BATTAGLIE COMPLETATE (${pct}%)</div>
       </div>
-      ${done > 0 ? `
-      <div class="tourn-ranking">
-        <div class="badge-header">PODIO PROVVISORIO</div>
-        <table class="tourn-table"><tbody>${podium}</tbody></table>
-      </div>` : ''}
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
         <button class="btn btn-secondary" data-tourn-detail="${t.id}">📋 TABELLONE</button>
         <button class="btn-icon btn-icon-del" data-del-tourn="${t.id}">🗑</button>
@@ -1151,29 +1227,34 @@ function openTournamentDetail(tid) {
   const body = document.getElementById('tourn-detail-body');
 
   const ranking = computeTournamentRanking(t);
+  const eloDeltas = computeTournamentEloDeltas(t);
   const rankingRows = ranking.map((r,i) => {
     const couple = t.couples[r.coupleIdx];
-    const names = couple.map(id => { const p=state.players.find(x=>x.id===id); return p?`${p.emoji||'🎾'} ${escHtml(p.name)}`:'?'; }).join(' + ');
-    const medal = ['🥇','🥈','🥉'][i] || `#${i+1}`;
+    const names = coupleNamesMarkup(couple, { initials: true, linked: true });
+    const position = `#${i + 1}`;
+    const eloDelta = eloDeltas[r.coupleIdx] || 0;
     return `<tr>
-      <td class="t-pos">${medal}</td>
+       <td class="t-pos">${position}</td>
       <td class="t-name">${names}</td>
-      <td>${r.played}</td>
-      <td>${r.wins}W ${r.draws}D ${r.losses}L</td>
+       <td class="t-challenges">${r.played}</td>
+       <td class="t-record"><span class="t-record-full">${r.wins}V ${r.draws}N ${r.losses}P</span><span class="t-record-values">${r.wins} ${r.draws} ${r.losses}</span></td>
       <td class="t-pts">${r.pts}</td>
-      <td class="t-diff">${r.diff>0?'+':''}${r.diff}</td>
+      <td class="t-elo ${eloDelta > 0 ? 'positive' : eloDelta < 0 ? 'negative' : ''}" title="Variazione ELO generata dai matchup di questa serata">${eloDelta>0?'+':''}${eloDelta}</td>
+      <td class="t-diff" title="Differenza tra game/set vinti e persi">${r.diff>0?'+':''}${r.diff}</td>
     </tr>`;
   }).join('');
 
   const matchups = t.matchups.map(mu => {
     const cA = t.couples[mu.cA];
     const cB = t.couples[mu.cB];
-    const nameA = cA.map(id=>{const p=state.players.find(x=>x.id===id);return p?`${p.emoji||'🎾'} ${p.name}`:'?';}).join(' + ');
-    const nameB = cB.map(id=>{const p=state.players.find(x=>x.id===id);return p?`${p.emoji||'🎾'} ${p.name}`:'?';}).join(' + ');
+    const nameA = coupleNamesMarkup(cA);
+    const nameB = coupleNamesMarkup(cB);
     const isDone = mu.scoreA !== null;
     const legLabel = t.matchups.filter(x=>x.cA===mu.cA && x.cB===mu.cB).length>1 ? ` <small style="color:var(--neon-cyan)">(g.${mu.leg+1})</small>` : '';
+    const scoreAClass = mu.scoreA > mu.scoreB ? 'matchup-score-win' : mu.scoreA < mu.scoreB ? 'matchup-score-loss' : 'matchup-score-draw';
+    const scoreBClass = mu.scoreB > mu.scoreA ? 'matchup-score-win' : mu.scoreB < mu.scoreA ? 'matchup-score-loss' : 'matchup-score-draw';
     const scoreHtml = isDone
-      ? `<span class="matchup-score played"><span style="color:var(--team-a)">${mu.scoreA}</span> : <span style="color:var(--team-b)">${mu.scoreB}</span></span>`
+      ? `<span class="matchup-score played"><span class="${scoreAClass}">${mu.scoreA}</span> : <span class="${scoreBClass}">${mu.scoreB}</span></span>`
       : `<span class="matchup-score" style="color:var(--text-muted)">VS</span>`;
     const actionBtn = isDone
       ? `<button class="btn-icon btn-icon-edit" data-tourn-matchup="${tid}__${mu.id}" title="Modifica">✏️</button>`
@@ -1181,9 +1262,9 @@ function openTournamentDetail(tid) {
 
     return `
       <div class="matchup-row ${isDone?'done':''}">
-        <div class="matchup-couple">${escHtml(nameA)}${legLabel}</div>
+        <div class="matchup-couple">${nameA}${legLabel}</div>
         ${scoreHtml}
-        <div class="matchup-couple">${escHtml(nameB)}</div>
+        <div class="matchup-couple">${nameB}</div>
         <div class="matchup-action">${actionBtn}</div>
       </div>`;
   }).join('');
@@ -1193,8 +1274,8 @@ function openTournamentDetail(tid) {
       <div class="badge-header">LEADERBOARD ARENA</div>
       <table class="tourn-table">
         <thead><tr>
-          <th class="t-pos">#</th><th>COPPIA</th><th>SFIDE</th><th>W/D/L</th>
-          <th class="t-pts">PUNTI</th><th class="t-diff">DIFF</th>
+          <th class="t-pos">#</th><th>COPPIA</th><th class="t-challenges">SFIDE</th><th>VNP</th>
+          <th class="t-pts">PUNTI</th><th class="t-elo" title="Variazione ELO generata dai matchup di questa serata">ELO</th><th class="t-diff" title="Differenza tra game/set vinti e persi">DIFF</th>
         </tr></thead>
         <tbody>${rankingRows}</tbody>
       </table>
@@ -1209,6 +1290,9 @@ function openTournamentDetail(tid) {
       const [tId, muId] = btn.dataset.tournMatchup.split('__');
       openMatchupResultModal(tId, muId);
     });
+  });
+  body.querySelectorAll('[data-player-detail]').forEach(btn => {
+    btn.addEventListener('click', () => openPlayerDetail(btn.dataset.playerDetail));
   });
 
   openModal('modal-tourn-detail');
@@ -1391,7 +1475,10 @@ function saveTournament() {
   if (new Set(allIds).size < allIds.length) return showToast('Un giocatore non può essere in più coppie contemporaneamente','error');
 
   const matchups = generateMatchups(couples, format);
-  const t = { id:uid(), name, date, status:'ongoing', matchType:type, format, couples, matchups };
+  const t = {
+    id: uid(), name, date, status: 'ongoing',
+    matchType: type, scoringMode: type, format, couples, matchups,
+  };
   state.tournaments.push(t);
   saveState();
   playSfx('fight');
@@ -1487,7 +1574,7 @@ function seedDemoData() {
 
 function registerSW() {
   if ('serviceWorker' in navigator)
-    navigator.serviceWorker.register('sw.js').catch(e => console.warn('SW', e));
+    navigator.serviceWorker.register('sw.js?v=4.11', { updateViaCache: 'none' }).catch(e => console.warn('SW', e));
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────
