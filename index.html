@@ -116,6 +116,9 @@
     <div class="footer-inner">
       <span class="footer-brand">⚡ CONTROVETRO <small>PRO LEAGUE</small></span>
       <div class="footer-sync-tools">
+        <button class="btn-icon btn-icon-info" id="btn-open-elo-modal" title="Come funziona l'ELO" aria-label="Come funziona l'ELO">
+          ℹ️
+        </button>
         <button class="btn-icon btn-icon-cloud" id="btn-open-sync-modal" title="Settings">
           ⚙️
         </button>
@@ -378,6 +381,34 @@
   </div>
 </div>
 
+<!-- ===== MODAL: ELO EXPLANATION ===== -->
+<div id="modal-elo" class="modal-overlay hidden">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h3>⚡ Come funziona l'ELO</h3>
+      <button class="modal-close" data-close="modal-elo">✕</button>
+    </div>
+    <div class="modal-body elo-info-content">
+      <div class="elo-info-highlight">
+        <strong>L'ELO misura la forza relativa</strong>
+        <p>Dopo ogni partita il rating si aggiorna in base a quanto il risultato era atteso. Battere una coppia più forte vale più punti; perdere contro una coppia più debole ne costa di più.</p>
+      </div>
+      <div class="elo-info-grid">
+        <div class="elo-info-card"><span class="elo-info-number">01</span><strong>Aspettativa</strong><p>Si confrontano le medie ELO delle due coppie per stimare la probabilità di ciascun risultato.</p></div>
+        <div class="elo-info-card"><span class="elo-info-number">02</span><strong>Risultato effettivo</strong><p>Il punteggio determina il risultato effettivo: punti o set vinti divisi per il totale.</p></div>
+        <div class="elo-info-card"><span class="elo-info-number">03</span><strong>Margine</strong><p>Un margine più ampio aggiunge un piccolo bonus alla coppia vincente, senza dipendere solo dal numero di game.</p></div>
+      </div>
+      <div class="elo-formula">
+        <strong>Formula applicata</strong>
+        <code>variazione = 32 × (risultato effettivo − aspettativa + bonus margine)</code>
+        <p>Il valore viene arrotondato all'intero più vicino. Il rating parte da <strong>1000</strong> e viene ricalcolato in ordine cronologico sulle sole partite completate.</p>
+      </div>
+      <p class="elo-info-footnote">Nei dettagli di ogni partita e di ogni serata sono mostrati i fattori che hanno prodotto la variazione visualizzata. Un risultato deve essere inserito entro 7 giorni dalla data della partita; dopo la scadenza la sfida non contribuisce all'ELO.</p>
+    </div>
+    <div class="modal-footer"><button class="btn btn-secondary" data-close="modal-elo">Chiudi</button></div>
+  </div>
+</div>
+
 <!-- ===== MODAL: CLOUD SYNC CONFIG ===== -->
 <div id="modal-sync" class="modal-overlay hidden">
   <div class="modal modal-sm">
@@ -392,10 +423,6 @@
           <span class="sync-badge" id="sync-modal-badge">Stato: Pronto</span>
           <span class="sync-time" id="sync-last-time">Ultimo sync: mai</span>
         </div>
-      </div>
-
-      <div class="sync-info-box">
-        <p>Sincronizzazione gestita automaticamente dal Cloud. Le credenziali restano protette sul server e non vengono mai richieste dall'app.</p>
       </div>
 
       <div class="form-group">

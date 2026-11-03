@@ -15,6 +15,7 @@
 // ── Constants ───────────────────────────────────────────────────────────────
 const ELO_K       = 32;
 const ELO_DEFAULT = 1000;
+const RESULT_WINDOW_DAYS = 7;
 const STORE_KEY   = 'padelRanking_v2';
 const SYNC_KEY    = 'padelSync_config_v1';
 const SYNC_ENDPOINT = '/api/sync';
@@ -436,6 +437,15 @@ function computeElo(pA, pB, scoreA, scoreB) {
   const margin = total > 0 ? (Math.abs(scoreA - scoreB) / total) * 0.15 : 0;
   const winBonus = scoreA > scoreB ? margin : scoreB > scoreA ? -margin : 0;
   return {
+    eloA,
+    eloB,
+    expectedA: expA,
+    expectedB: expB,
+    actualA: actA,
+    actualB: actB,
+    margin,
+    winBonus,
+    winBonusPoints: ELO_K * winBonus,
     deltaA: Math.round(ELO_K * (actA - expA) + ELO_K * winBonus),
     deltaB: Math.round(ELO_K * (actB - expB) - ELO_K * winBonus),
   };
@@ -458,8 +468,13 @@ function recomputeAllElo() {
 }
 
 function computeMatchEloDeltas(targetMatch) {
+  return computeMatchEloBreakdown(targetMatch).deltas;
+}
+
+function computeMatchEloBreakdown(targetMatch) {
   const ratings = Object.fromEntries(state.players.map(p => [p.id, ELO_DEFAULT]));
   const deltas = {};
+  let calculation = null;
   const completed = [...state.matches]
     .filter(m => m.status === 'completed' && Number.isFinite(m.scoreA) && Number.isFinite(m.scoreB))
     .sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -469,17 +484,43 @@ function computeMatchEloDeltas(targetMatch) {
     const pB = m.teamB.map(id => ({ id, elo: ratings[id] ?? ELO_DEFAULT }));
     if (pA.length < 2 || pB.length < 2) return;
 
-    const { deltaA, deltaB } = computeElo(pA, pB, m.scoreA, m.scoreB);
+    const elo = computeElo(pA, pB, m.scoreA, m.scoreB);
     if (m.id === targetMatch.id) {
-      pA.forEach(p => { deltas[p.id] = deltaA; });
-      pB.forEach(p => { deltas[p.id] = deltaB; });
+      pA.forEach(p => { deltas[p.id] = elo.deltaA; });
+      pB.forEach(p => { deltas[p.id] = elo.deltaB; });
+      calculation = elo;
     }
 
-    pA.forEach(p => { ratings[p.id] += deltaA; });
-    pB.forEach(p => { ratings[p.id] += deltaB; });
+    pA.forEach(p => { ratings[p.id] += elo.deltaA; });
+    pB.forEach(p => { ratings[p.id] += elo.deltaB; });
   });
 
-  return deltas;
+  return { deltas, calculation };
+}
+
+function formatEloPercent(value) {
+  return `${Math.round(value * 100)}%`;
+}
+
+function formatEloFactor(value) {
+  return `${value < 0 ? '-' : ''}${Math.abs(value).toFixed(3)}`;
+}
+
+function formatEloSigned(value) {
+  return `${value > 0 ? '+' : ''}${value}`;
+}
+
+function eloCalculationMarkup(calculation, scoreA, scoreB) {
+  if (!calculation) return '';
+  return `<div class="elo-calculation">
+    <div class="match-detail-section-title">Come è stata calcolata</div>
+    <p>Medie pre-partita: <strong>${Math.round(calculation.eloA)}</strong> vs <strong>${Math.round(calculation.eloB)}</strong>. Con il risultato <strong>${scoreA} - ${scoreB}</strong>, l'aspettativa era <strong>${formatEloPercent(calculation.expectedA)}</strong> vs <strong>${formatEloPercent(calculation.expectedB)}</strong>, mentre il risultato effettivo è stato <strong>${formatEloPercent(calculation.actualA)}</strong> vs <strong>${formatEloPercent(calculation.actualB)}</strong>.</p>
+    <p>Il margine ha aggiunto <strong>${calculation.winBonusPoints >= 0 ? '+' : ''}${calculation.winBonusPoints.toFixed(1)} punti</strong> alla squadra A e il valore opposto alla squadra B. La variazione usa <strong>K = ${ELO_K}</strong> ed è arrotondata all'intero.</p>
+    <div class="elo-formula-values">
+      <div><strong>Squadra A:</strong> ${ELO_K} × (${formatEloFactor(calculation.actualA)} − ${formatEloFactor(calculation.expectedA)} + ${formatEloFactor(calculation.winBonus)}) = <strong>${formatEloSigned(calculation.deltaA)} ELO</strong></div>
+      <div><strong>Squadra B:</strong> ${ELO_K} × (${formatEloFactor(calculation.actualB)} − ${formatEloFactor(calculation.expectedB)} + ${formatEloFactor(-calculation.winBonus)}) = <strong>${formatEloSigned(calculation.deltaB)} ELO</strong></div>
+    </div>
+  </div>`;
 }
 
 // ── Navigation ──────────────────────────────────────────────────────────────
@@ -793,15 +834,20 @@ function renderMatches() {
 }
 
 function renderMatchCard(m, isOngoing) {
+  const expired = isOngoing && isResultExpired(m);
   const winnerSide = m.scoreA > m.scoreB ? 'a' : m.scoreB > m.scoreA ? 'b' : null;
-  const scoreTxt = isOngoing
-    ? `<div class="score-display" style="color:var(--neon-pink);font-size:1.1rem;letter-spacing:0.06em">IN CORSO</div>`
-     : winnerSide
-       ? `<div class="match-winner-players">${teamWinnerMarkup(winnerSide === 'a' ? m.teamA : m.teamB)}</div>`
-       : '<span class="match-draw-label">PAREGGIO</span>';
+  const scoreTxt = expired
+    ? `<div class="score-display match-expired-label">SCADUTA</div>`
+    : isOngoing
+      ? `<div class="score-display" style="color:var(--neon-pink);font-size:1.1rem;letter-spacing:0.06em">IN CORSO</div>`
+    : winnerSide
+      ? `<div class="match-winner-players">${teamWinnerMarkup(winnerSide === 'a' ? m.teamA : m.teamB)}</div>`
+      : '<span class="match-draw-label">PAREGGIO</span>';
 
   const actions = isOngoing
-     ? `<button class="btn-icon btn-icon-score" data-result="${m.id}">LIVE</button>
+     ? `${expired
+       ? '<span class="match-expired-note">Risultato non inserito entro 7 giorni</span>'
+       : `<button class="btn-icon btn-icon-score" data-result="${m.id}">LIVE</button>`}
         <button class="btn-icon btn-icon-del" data-del-match="${m.id}" title="Elimina">🗑</button>`
      : `<button class="btn btn-secondary btn-match-detail" data-match-detail="${m.id}">DETTAGLI</button>
         <button class="btn-icon btn-icon-del" data-del-match="${m.id}" title="Elimina">🗑</button>`;
@@ -856,13 +902,17 @@ function openMatchDetail(matchId) {
   const match = state.matches.find(m => m.id === matchId);
   if (!match) return;
 
-  const deltas = computeMatchEloDeltas(match);
+  const { deltas, calculation } = computeMatchEloBreakdown(match);
   const winnerSide = match.scoreA > match.scoreB ? 'a' : match.scoreB > match.scoreA ? 'b' : null;
   const sets = match.sets && match.sets.length
-    ? match.sets.map((set, index) => `<div class="match-detail-set">
-        <span>SET ${index + 1}</span><strong class="score-a">${set.a}</strong><span>-</span><strong class="score-b">${set.b}</strong>
-      </div>`).join('')
-    : `<div class="match-detail-set"><span>RISULTATO</span><strong>${match.scoreA ?? '-'} - ${match.scoreB ?? '-'}</strong></div>`;
+    ? match.sets.map((set, index) => {
+      const setAClass = set.a > set.b ? 'matchup-score-win' : set.a < set.b ? 'matchup-score-loss' : 'matchup-score-draw';
+      const setBClass = set.b > set.a ? 'matchup-score-win' : set.b < set.a ? 'matchup-score-loss' : 'matchup-score-draw';
+      return `<div class="match-detail-set">
+        <span>SET ${index + 1}</span><strong class="${setAClass}">${set.a}</strong><span>-</span><strong class="${setBClass}">${set.b}</strong>
+      </div>`;
+    }).join('')
+    : `<div class="match-detail-set"><span>RISULTATO</span><strong class="${match.scoreA > match.scoreB ? 'matchup-score-win' : match.scoreA < match.scoreB ? 'matchup-score-loss' : 'matchup-score-draw'}">${match.scoreA ?? '-'}</strong><span>-</span><strong class="${match.scoreB > match.scoreA ? 'matchup-score-win' : match.scoreB < match.scoreA ? 'matchup-score-loss' : 'matchup-score-draw'}">${match.scoreB ?? '-'}</strong></div>`;
 
   const playerRows = [
     ...match.teamA.map(id => ({ id, side: 'a' })),
@@ -889,8 +939,9 @@ function openMatchDetail(matchId) {
       <span>${winnerText}</span>
       <div class="match-detail-sets">${sets}</div>
     </div>
-    <div class="match-detail-section-title">Variazione ELO giocatori</div>
-    <div class="match-detail-players">${playerRows}</div>`;
+     <div class="match-detail-section-title">Variazione ELO giocatori</div>
+     <div class="match-detail-players">${playerRows}</div>
+     ${eloCalculationMarkup(calculation, match.scoreA, match.scoreB)}`;
   openModal('modal-match-detail');
 }
 
@@ -955,6 +1006,9 @@ function saveMatch() {
   if (!a1||!a2||!b1||!b2) return showToast('Seleziona tutti i giocatori','error');
   if (new Set([a1,a2,b1,b2]).size < 4) return showToast('I giocatori devono essere tutti diversi','error');
   if (!date) return showToast('Inserisci la data','error');
+  if (status === 'ongoing' && isResultExpired({ date })) {
+    return showToast('Una partita senza risultato deve essere completata entro 7 giorni dalla data', 'error');
+  }
 
   let scoreA = null, scoreB = null, sets = [];
   if (status === 'completed') {
@@ -992,6 +1046,9 @@ function initResultModal() {
 function openResultModal(matchId) {
   const m = state.matches.find(x => x.id === matchId);
   if (!m) return;
+  if (isResultExpired(m)) {
+    return showToast('Questa partita è scaduta: il risultato non può più essere inserito o modificato', 'error');
+  }
 
   document.getElementById('result-match-id').value = matchId;
   const isLegacy = m.type === 'games';
@@ -1016,6 +1073,10 @@ function saveResult() {
   const matchId = document.getElementById('result-match-id').value;
   const m = state.matches.find(x => x.id === matchId);
   if (!m) return;
+  if (isResultExpired(m)) {
+    closeModal('modal-result');
+    return showToast('Questa partita è scaduta: il risultato non può più essere inserito o modificato', 'error');
+  }
 
   const status = getToggleVal('result-status-toggle') || 'completed';
   let scoreA = null;
@@ -1281,8 +1342,13 @@ function computeTournamentRanking(t) {
 }
 
 function computeTournamentEloDeltas(t) {
+  return computeTournamentEloBreakdown(t).deltas;
+}
+
+function computeTournamentEloBreakdown(t) {
   const ratings = Object.fromEntries(state.players.map(p => [p.id, ELO_DEFAULT]));
   const deltas = {};
+  const calculations = [];
   const matchupByMatchId = new Map(t.matchups.filter(mu => mu.matchId).map(mu => [mu.matchId, mu]));
   const completed = [...state.matches]
     .filter(m => m.status === 'completed' && Number.isFinite(m.scoreA) && Number.isFinite(m.scoreB))
@@ -1293,18 +1359,20 @@ function computeTournamentEloDeltas(t) {
     const pB = m.teamB.map(id => ({ elo: ratings[id] })).filter(p => Number.isFinite(p.elo));
     if (pA.length < 2 || pB.length < 2) return;
 
-    const { deltaA, deltaB } = computeElo(pA, pB, m.scoreA, m.scoreB);
+    const elo = computeElo(pA, pB, m.scoreA, m.scoreB);
+    const { deltaA, deltaB } = elo;
     const matchup = matchupByMatchId.get(m.id);
     if (matchup) {
       deltas[matchup.cA] = (deltas[matchup.cA] || 0) + deltaA;
       deltas[matchup.cB] = (deltas[matchup.cB] || 0) + deltaB;
+      calculations.push({ matchup, ...elo, scoreA: m.scoreA, scoreB: m.scoreB });
     }
 
     m.teamA.forEach(id => { if (ratings[id] !== undefined) ratings[id] += deltaA; });
     m.teamB.forEach(id => { if (ratings[id] !== undefined) ratings[id] += deltaB; });
   });
 
-  return deltas;
+  return { deltas, calculations };
 }
 
 function renderTournaments() {
@@ -1383,7 +1451,7 @@ function openTournamentDetail(tid) {
   const body = document.getElementById('tourn-detail-body');
 
   const ranking = computeTournamentRanking(t);
-  const eloDeltas = computeTournamentEloDeltas(t);
+  const { deltas: eloDeltas, calculations: eloCalculations } = computeTournamentEloBreakdown(t);
   const rankingRows = ranking.map((r,i) => {
     const couple = t.couples[r.coupleIdx];
     const names = coupleNamesMarkup(couple, { initials: true, linked: true });
@@ -1406,18 +1474,22 @@ function openTournamentDetail(tid) {
     const nameA = coupleNamesMarkup(cA);
     const nameB = coupleNamesMarkup(cB);
     const isDone = mu.scoreA !== null;
+    const linkedMatch = mu.matchId ? state.matches.find(m => m.id === mu.matchId) : null;
+    const expired = isResultExpired(linkedMatch || { date: t.date });
     const legLabel = t.matchups.filter(x=>x.cA===mu.cA && x.cB===mu.cB).length>1 ? ` <small style="color:var(--neon-cyan)">(g.${mu.leg+1})</small>` : '';
     const scoreAClass = mu.scoreA > mu.scoreB ? 'matchup-score-win' : mu.scoreA < mu.scoreB ? 'matchup-score-loss' : 'matchup-score-draw';
     const scoreBClass = mu.scoreB > mu.scoreA ? 'matchup-score-win' : mu.scoreB < mu.scoreA ? 'matchup-score-loss' : 'matchup-score-draw';
     const scoreHtml = isDone
       ? `<span class="matchup-score played"><span class="${scoreAClass}">${mu.scoreA}</span> : <span class="${scoreBClass}">${mu.scoreB}</span></span>`
        : '';
-    const actionBtn = isDone
+    const actionBtn = expired
+      ? '<span class="match-expired-note">SCADUTA</span>'
+      : isDone
       ? `<button class="btn-icon btn-icon-edit" data-tourn-matchup="${tid}__${mu.id}" title="Modifica">✏️</button>`
       : `<button class="btn-icon btn-icon-score" data-tourn-matchup="${tid}__${mu.id}" title="Registra">⚡ RISULTATO</button>`;
 
     return `
-      <div class="matchup-row ${isDone?'done':''}">
+      <div class="matchup-row ${isDone?'done':''} ${expired?'expired':''}">
         <div class="matchup-couple">${nameA}${legLabel}</div>
         <div class="matchup-center"><span class="matchup-vs">VS</span>${scoreHtml}</div>
         <div class="matchup-couple">${nameB}</div>
@@ -1425,10 +1497,24 @@ function openTournamentDetail(tid) {
       </div>`;
   }).join('');
 
+  const eloCalculationRows = eloCalculations.length
+    ? eloCalculations.map(({ matchup, scoreA, scoreB, actualA, actualB, expectedA, expectedB, winBonus, deltaA, deltaB }) => {
+      const coupleA = coupleNamesMarkup(t.couples[matchup.cA]);
+      const coupleB = coupleNamesMarkup(t.couples[matchup.cB]);
+      return `<div class="elo-tournament-calculation">
+        <strong>${coupleA} ${scoreA} - ${scoreB} ${coupleB}</strong>
+        <div class="elo-formula-values">
+          <div><strong>${coupleA}:</strong> ${ELO_K} × (${formatEloFactor(actualA)} − ${formatEloFactor(expectedA)} + ${formatEloFactor(winBonus)}) = <strong>${formatEloSigned(deltaA)} ELO</strong></div>
+          <div><strong>${coupleB}:</strong> ${ELO_K} × (${formatEloFactor(actualB)} − ${formatEloFactor(expectedB)} + ${formatEloFactor(-winBonus)}) = <strong>${formatEloSigned(deltaB)} ELO</strong></div>
+        </div>
+      </div>`;
+    }).join('')
+    : '<p>Nessun matchup completato: non ci sono ancora variazioni ELO da calcolare.</p>';
+
   body.innerHTML = `
-    <div class="tourn-ranking">
-      <div class="badge-header">LEADERBOARD ARENA</div>
-      <table class="tourn-table">
+     <div class="tourn-ranking">
+       <div class="badge-header">LEADERBOARD ARENA</div>
+       <table class="tourn-table">
         <thead><tr>
           <th class="t-pos">#</th><th>COPPIA</th><th class="t-challenges">SFIDE</th><th>VNP</th>
           <th class="t-pts">PUNTI</th><th class="t-elo" title="Variazione ELO generata dai matchup di questa serata">ELO</th><th class="t-diff" title="Differenza tra game/set vinti e persi">DIFF</th>
@@ -1436,10 +1522,16 @@ function openTournamentDetail(tid) {
         <tbody>${rankingRows}</tbody>
       </table>
     </div>
-    <div style="margin-top:20px">
-      <div class="badge-header">CALENDARIO MATCHUP</div>
-      <div class="matchup-grid">${matchups}</div>
-    </div>`;
+     <div style="margin-top:20px">
+       <div class="badge-header">CALENDARIO MATCHUP</div>
+       <div class="matchup-grid">${matchups}</div>
+      </div>
+      <div class="elo-calculation elo-calculation-tournament">
+        <div class="match-detail-section-title">Come viene calcolato l'ELO della serata</div>
+        <p>Ogni variazione mostrata è la somma dei cambiamenti prodotti dai matchup completati della serata. Per ciascun matchup si confrontano le medie ELO pre-partita con il risultato atteso, il risultato effettivo e il margine del punteggio.</p>
+        <p><strong>Variazione = ${ELO_K} × (risultato effettivo − aspettativa + bonus margine)</strong>. Il valore di ogni matchup è arrotondato prima di essere sommato.</p>
+        <div class="elo-tournament-calculations">${eloCalculationRows}</div>
+      </div>`;
 
   body.querySelectorAll('[data-tourn-matchup]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1459,6 +1551,10 @@ function openMatchupResultModal(tid, muId) {
   if(!t) return;
   const mu = t.matchups.find(x => x.id === muId);
   if(!mu) return;
+  const linkedMatch = mu.matchId ? state.matches.find(m => m.id === mu.matchId) : null;
+  if (isResultExpired(linkedMatch || { date: t.date })) {
+    return showToast('Questo matchup è scaduto: il risultato non può più essere inserito o modificato', 'error');
+  }
 
   let matchId = mu.matchId;
   if (!matchId) {
@@ -1701,6 +1797,11 @@ function initSyncModal() {
   }
 }
 
+function initEloInfoModal() {
+  const button = document.getElementById('btn-open-elo-modal');
+  if (button) button.addEventListener('click', () => openModal('modal-elo'));
+}
+
 function openSyncModal() {
   document.getElementById('sync-auto').checked = !!syncConfig.autoSync;
   updateSyncUI(isSyncing ? 'syncing' : 'synced');
@@ -1722,6 +1823,14 @@ function initAutoSyncPolling() {
 
 // ── Demo & Startup ───────────────────────────────────────────────────────────
 function todayStr() { return new Date().toISOString().split('T')[0]; }
+
+function isResultExpired(match) {
+  if (!match?.date) return false;
+  const [year, month, day] = match.date.split('-').map(Number);
+  if (![year, month, day].every(Number.isFinite)) return false;
+  const deadline = new Date(year, month - 1, day + RESULT_WINDOW_DAYS);
+  return Date.now() >= deadline.getTime();
+}
 
 function seedDemoData() {
   if (state.players.length > 0) return;
@@ -1750,6 +1859,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initPlayerModal();
   initConfirmModal();
   initTournamentModal();
+  initEloInfoModal();
   initSyncModal();
   initAutoSyncPolling();
 
