@@ -20,3 +20,14 @@ Recommended source preparation:
 - Use a square canvas for close-ups and keep the face centered.
 - The app does not upload, edit, or replace these files. Missing files use the
   player's emoji, so images can be added progressively.
+
+## Normalize full-body images
+
+The `*_full.png` files can be normalized to a shared `768x1024` transparent
+canvas, with the visible character set to `960px` high:
+
+```bash
+python3 normalize_full_images.py
+```
+
+The originals are unchanged. Output files are written to `normalized/`.

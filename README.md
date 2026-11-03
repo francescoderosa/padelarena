@@ -29,6 +29,9 @@ rembg i "/Users/francesco.derosa/Downloads/brawlers/lele_full.png" "/Users/franc
 
 Il file di destinazione viene creato in formato PNG RGBA con il canale alpha per la trasparenza.
 
+Per preparare e uniformare le immagini full-body dei giocatori, consulta la
+[guida agli asset dei giocatori](assets/players/README.md).
+
 ---
 
 ## ☁️ Sincronizzazione Multi-dispositivo
