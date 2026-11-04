@@ -13,11 +13,11 @@
 'use strict';
 
 // ── Constants ───────────────────────────────────────────────────────────────
-const ELO_K       = 32;
+const ELO_K = 32;
 const ELO_DEFAULT = 1000;
 const RESULT_WINDOW_DAYS = 7;
-const STORE_KEY   = 'padelRanking_v2';
-const SYNC_KEY    = 'padelSync_config_v1';
+const STORE_KEY = 'padelRanking_v2';
+const SYNC_KEY = 'padelSync_config_v1';
 const SYNC_ENDPOINT = '/api/sync';
 
 const TOURNAMENT_SCORING = Object.freeze({
@@ -31,9 +31,9 @@ const DEFAULT_SYNC = {
 };
 
 const EMOJIS = [
-  '🎾','🏓','⚽','🏐','🥎','🏆','👑','🔥','⚡','💪',
-  '🦁','🐯','🦅','🐺','🦊','🐻','🦈','🐉','🦋','🌟',
-  '😎','🤩','🥷','🧠','💎','🚀','🎯','🏋️','🤸','🧗',
+  '🎾', '🏓', '⚽', '🏐', '🥎', '🏆', '👑', '🔥', '⚡', '💪',
+  '🦁', '🐯', '🦅', '🐺', '🦊', '🐻', '🦈', '🐉', '🦋', '🌟',
+  '😎', '🤩', '🥷', '🧠', '💎', '🚀', '🎯', '🏋️', '🤸', '🧗',
 ];
 
 // ── State ───────────────────────────────────────────────────────────────────
@@ -230,9 +230,9 @@ function launchConfetti() {
 // ── PLAYER TIERS ────────────────────────────────────────────────────────────
 function getPlayerTier(elo) {
   if (elo >= 1100) return { name: 'DIAMOND', class: 'tier-diamond', icon: '💎' };
-  if (elo >= 1030) return { name: 'GOLD',    class: 'tier-gold',    icon: '🥇' };
-  if (elo >= 970)  return { name: 'SILVER',  class: 'tier-silver',  icon: '🥈' };
-  return                  { name: 'BRONZE',  class: 'tier-bronze',  icon: '🥉' };
+  if (elo >= 1030) return { name: 'GOLD', class: 'tier-gold', icon: '🥇' };
+  if (elo >= 970) return { name: 'SILVER', class: 'tier-silver', icon: '🥈' };
+  return { name: 'BRONZE', class: 'tier-bronze', icon: '🥉' };
 }
 
 // ── Persistence & Cloud Sync ────────────────────────────────────────────────
@@ -282,25 +282,25 @@ function loadState() {
     console.warn('Load error, reset', e);
   }
   if (!state.tournaments) state.tournaments = [];
-  if (!state.players)     state.players = [];
-  if (!state.matches)     state.matches = [];
-  if (!state.updatedAt)   state.updatedAt = 0;
+  if (!state.players) state.players = [];
+  if (!state.matches) state.matches = [];
+  if (!state.updatedAt) state.updatedAt = 0;
 
   state.players.forEach(p => { if (!p.elo) p.elo = ELO_DEFAULT; });
   state.matches.forEach(m => {
     if (!m.status) m.status = 'completed';
-    if (!m.type)   m.type   = 'sets';
+    if (!m.type) m.type = 'sets';
     if (m.type === 'sets' && !Array.isArray(m.sets)) m.sets = [];
   });
   normalizeTournamentScoring(state.tournaments);
 }
 
 function updateSyncUI(status, label = '') {
-  const dot  = document.getElementById('sync-dot');
+  const dot = document.getElementById('sync-dot');
   const icon = document.getElementById('sync-icon');
   const text = document.getElementById('sync-text');
   const modalBadge = document.getElementById('sync-modal-badge');
-  const modalTime  = document.getElementById('sync-last-time');
+  const modalTime = document.getElementById('sync-last-time');
 
   if (dot) dot.className = `sync-dot ${status}`;
   if (icon) {
@@ -310,9 +310,9 @@ function updateSyncUI(status, label = '') {
   if (text && label) text.textContent = label;
 
   if (modalBadge) {
-    if (status === 'synced')  modalBadge.textContent = '🟢 Sincronizzato';
+    if (status === 'synced') modalBadge.textContent = '🟢 Sincronizzato';
     if (status === 'syncing') modalBadge.textContent = '🔄 In corso...';
-    if (status === 'error')   modalBadge.textContent = '⚠️ Errore / Offline';
+    if (status === 'error') modalBadge.textContent = '⚠️ Errore / Offline';
   }
 
   if (modalTime && state.updatedAt) {
@@ -380,10 +380,10 @@ async function pullFromCloud(options = { silent: false, force: false }) {
     const localUpdatedAt = Number(state.updatedAt) || 0;
 
     if (options.force || cloudUpdatedAt > localUpdatedAt || (state.players.length === 0 && (record.players || []).length > 0)) {
-      state.players     = Array.isArray(record.players)     ? record.players     : [];
-      state.matches     = Array.isArray(record.matches)     ? record.matches     : [];
+      state.players = Array.isArray(record.players) ? record.players : [];
+      state.matches = Array.isArray(record.matches) ? record.matches : [];
       state.tournaments = Array.isArray(record.tournaments) ? record.tournaments : [];
-      state.updatedAt   = cloudUpdatedAt || Date.now();
+      state.updatedAt = cloudUpdatedAt || Date.now();
 
       normalizeTournamentScoring(state.tournaments);
 
@@ -424,7 +424,7 @@ async function pullFromCloud(options = { silent: false, force: false }) {
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
 // ── ELO Engine ──────────────────────────────────────────────────────────────
-function avg(arr) { return arr.reduce((s,v) => s+v, 0) / (arr.length || 1); }
+function avg(arr) { return arr.reduce((s, v) => s + v, 0) / (arr.length || 1); }
 
 function computeElo(pA, pB, scoreA, scoreB) {
   const eloA = avg(pA.map(p => p.elo));
@@ -455,7 +455,7 @@ function recomputeAllElo() {
   state.players.forEach(p => { p.elo = ELO_DEFAULT; });
   const sorted = [...state.matches]
     .filter(m => m.status === 'completed')
-    .sort((a,b) => new Date(a.date) - new Date(b.date));
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   sorted.forEach(m => {
     const pA = m.teamA.map(id => state.players.find(p => p.id === id)).filter(Boolean);
@@ -539,10 +539,10 @@ function initNav() {
 }
 
 function renderPage(p) {
-  if (p === 'ranking')     renderRanking();
-  if (p === 'matches')     renderMatches();
+  if (p === 'ranking') renderRanking();
+  if (p === 'matches') renderMatches();
   if (p === 'tournaments') renderTournaments();
-  if (p === 'players')     renderPlayers();
+  if (p === 'players') renderPlayers();
 }
 
 // ── Modal helpers ────────────────────────────────────────────────────────────
@@ -601,10 +601,10 @@ function showToast(msg, type = 'success') {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-const escHtml = s => (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const escHtml = s => (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 const getPlayer = id => state.players.find(x => x.id === id);
-const pName = id => { const p = getPlayer(id); return p ? `${p.emoji||'🎾'} ${escHtml(p.name)}` : '?'; };
-const fmtDate = d => d ? new Date(d+'T00:00:00').toLocaleDateString('it-IT',{day:'2-digit',month:'short',year:'numeric'}) : '';
+const pName = id => { const p = getPlayer(id); return p ? `${p.emoji || '🎾'} ${escHtml(p.name)}` : '?'; };
+const fmtDate = d => d ? new Date(d + 'T00:00:00').toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric' }) : '';
 
 function playerInitials(name) {
   const words = (name || '').trim().split(/\s+/).filter(Boolean);
@@ -727,17 +727,17 @@ function teamPreviewMarkup(ids, teamClass) {
 // ── RANKING (FIGHTING GAME ROSTER STYLE) ──────────────────────────────────────
 function buildPlayerStats() {
   const stats = {};
-  state.players.forEach(p => { stats[p.id] = {wins:0,losses:0,draws:0,played:0}; });
+  state.players.forEach(p => { stats[p.id] = { wins: 0, losses: 0, draws: 0, played: 0 }; });
   state.matches.filter(m => m.status === 'completed').forEach(m => {
-    [...m.teamA,...m.teamB].forEach(id => { if(stats[id]) stats[id].played++; });
+    [...m.teamA, ...m.teamB].forEach(id => { if (stats[id]) stats[id].played++; });
     if (m.scoreA > m.scoreB) {
-      m.teamA.forEach(id => { if(stats[id]) stats[id].wins++; });
-      m.teamB.forEach(id => { if(stats[id]) stats[id].losses++; });
+      m.teamA.forEach(id => { if (stats[id]) stats[id].wins++; });
+      m.teamB.forEach(id => { if (stats[id]) stats[id].losses++; });
     } else if (m.scoreB > m.scoreA) {
-      m.teamB.forEach(id => { if(stats[id]) stats[id].wins++; });
-      m.teamA.forEach(id => { if(stats[id]) stats[id].losses++; });
+      m.teamB.forEach(id => { if (stats[id]) stats[id].wins++; });
+      m.teamA.forEach(id => { if (stats[id]) stats[id].losses++; });
     } else {
-      [...m.teamA,...m.teamB].forEach(id => { if(stats[id]) stats[id].draws++; });
+      [...m.teamA, ...m.teamB].forEach(id => { if (stats[id]) stats[id].draws++; });
     }
   });
   return stats;
@@ -751,19 +751,19 @@ function renderRanking() {
     return;
   }
   const stats = buildPlayerStats();
-  const sorted = [...state.players].sort((a,b) => b.elo - a.elo);
+  const sorted = [...state.players].sort((a, b) => b.elo - a.elo);
 
   container.innerHTML = sorted.map((p, i) => {
     const s = stats[p.id] || {};
-    const pos = i+1;
+    const pos = i + 1;
     const positionLabel = `#${pos}`;
-    const wr = s.played>0 ? Math.round(s.wins/s.played*100) : 0;
+    const wr = s.played > 0 ? Math.round(s.wins / s.played * 100) : 0;
     const tier = getPlayerTier(p.elo);
     // Calcolo barra potenza ELO (800 - 1300 scale)
     const powerPct = Math.min(100, Math.max(10, Math.round(((p.elo - 800) / 450) * 100)));
 
     return `
-      <div class="rank-card ${pos<=3?'rank-'+pos:''}" data-player-detail="${p.id}" tabindex="0" role="button" aria-label="Apri il profilo di ${escHtml(p.name)}">
+      <div class="rank-card ${pos <= 3 ? 'rank-' + pos : ''}" data-player-detail="${p.id}" tabindex="0" role="button" aria-label="Apri il profilo di ${escHtml(p.name)}">
          <div class="rank-pos">${positionLabel}</div>
         <div class="rank-avatar-wrap">
           ${playerImageMarkup(p, 'full', 'rank-player-image')}
@@ -777,9 +777,9 @@ function renderRanking() {
             <div class="rank-power-bar" style="width:${powerPct}%"></div>
           </div>
           <div class="rank-stats">
-            <span class="rank-stat">BATTLES: <strong>${s.played||0}</strong></span>
-            <span class="rank-stat">VICTORIES: <span class="stat-highlight">${s.wins||0}W</span></span>
-            <span class="rank-stat">DEFEATS: <span>${s.losses||0}L</span></span>
+            <span class="rank-stat">BATTLES: <strong>${s.played || 0}</strong></span>
+            <span class="rank-stat">VICTORIES: <span class="stat-highlight">${s.wins || 0}W</span></span>
+            <span class="rank-stat">DEFEATS: <span>${s.losses || 0}L</span></span>
             <span class="rank-stat">WINRATE: <span class="stat-highlight">${wr}%</span></span>
           </div>
         </div>
@@ -808,13 +808,13 @@ function bindPlayerDetailEvents(container) {
 
 // ── MATCHES / BATTLES ────────────────────────────────────────────────────────
 function renderMatches() {
-  const ongoing   = state.matches.filter(m => m.status === 'ongoing');
+  const ongoing = state.matches.filter(m => m.status === 'ongoing');
   const completed = state.matches.filter(m => m.status === 'completed' && !m.tournamentId)
-                        .sort((a,b) => new Date(b.date)-new Date(a.date));
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  const ongoingSec  = document.getElementById('ongoing-section');
+  const ongoingSec = document.getElementById('ongoing-section');
   const ongoingList = document.getElementById('ongoing-list');
-  const matchList   = document.getElementById('matches-list');
+  const matchList = document.getElementById('matches-list');
 
   if (ongoing.length) {
     ongoingSec.classList.remove('hidden');
@@ -840,27 +840,27 @@ function renderMatchCard(m, isOngoing) {
     ? `<div class="score-display match-expired-label">SCADUTA</div>`
     : isOngoing
       ? `<div class="score-display" style="color:var(--neon-pink);font-size:1.1rem;letter-spacing:0.06em">IN CORSO</div>`
-    : winnerSide
-      ? `<div class="match-winner-players">${teamWinnerMarkup(winnerSide === 'a' ? m.teamA : m.teamB)}</div>`
-      : '<span class="match-draw-label">PAREGGIO</span>';
+      : winnerSide
+        ? `<div class="match-winner-players">${teamWinnerMarkup(winnerSide === 'a' ? m.teamA : m.teamB)}</div>`
+        : '<span class="match-draw-label">PAREGGIO</span>';
 
   const actions = isOngoing
-     ? `${expired
-       ? '<span class="match-expired-note">Risultato non inserito entro 7 giorni</span>'
-       : `<button class="btn-icon btn-icon-score" data-result="${m.id}">LIVE</button>`}
+    ? `${expired
+      ? '<span class="match-expired-note">Risultato non inserito entro 7 giorni</span>'
+      : `<button class="btn-icon btn-icon-score" data-result="${m.id}">LIVE</button>`}
         <button class="btn-icon btn-icon-del" data-del-match="${m.id}" title="Elimina">🗑</button>`
-     : `<button class="btn btn-secondary btn-match-detail" data-match-detail="${m.id}">DETTAGLI</button>
+    : `<button class="btn btn-secondary btn-match-detail" data-match-detail="${m.id}">DETTAGLI</button>
         <button class="btn-icon btn-icon-del" data-del-match="${m.id}" title="Elimina">🗑</button>`;
 
   const classA = winnerSide === 'a' ? 'winner-team' : winnerSide === 'b' ? 'loser-team' : '';
   const classB = winnerSide === 'b' ? 'winner-team' : winnerSide === 'a' ? 'loser-team' : '';
 
   return `
-    <div class="match-card ${isOngoing?'ongoing':''}">
+    <div class="match-card ${isOngoing ? 'ongoing' : ''}">
       <div class="match-header">
         <div class="match-meta">
           <span class="match-date">📅 ${fmtDate(m.date)}</span>
-          <span class="match-type-badge">${m.type==='games'?'🏃 GAMES':'🎾 BEST OF SETS'}</span>
+          <span class="match-type-badge">${m.type === 'games' ? '🏃 GAMES' : '🎾 BEST OF SETS'}</span>
         </div>
         <div class="match-actions">${actions}</div>
       </div>
@@ -968,7 +968,7 @@ function initMatchModal() {
   document.getElementById('btn-new-match').addEventListener('click', openNewMatchModal);
   document.getElementById('btn-save-match').addEventListener('click', saveMatch);
 
-  initToggle('match-status-toggle', () => {});
+  initToggle('match-status-toggle', () => { });
   document.addEventListener('click', event => {
     const button = event.target.closest('[data-add-set]');
     if (button) addSetInput(button.dataset.addSet);
@@ -979,7 +979,7 @@ function openNewMatchModal() {
   if (state.players.length < 4) return showToast('Servono almeno 4 giocatori nel roster!', 'error');
   document.getElementById('modal-match-title').textContent = '🎾 Nuova Partita';
   document.getElementById('edit-match-id').value = '';
-  fillPlayerSelects(['teamA1','teamA2','teamB1','teamB2']);
+  fillPlayerSelects(['teamA1', 'teamA2', 'teamB1', 'teamB2']);
   document.getElementById('match-date').value = todayStr();
   renderSetInputs('match-set-inputs');
   setToggleVal('match-status-toggle', 'completed');
@@ -990,8 +990,8 @@ function fillPlayerSelects(ids, excluded = []) {
   const opts = '<option value="">— Seleziona —</option>' +
     state.players
       .filter(p => !excluded.includes(p.id))
-      .map(p => `<option value="${p.id}">${p.emoji||'🎾'} ${escHtml(p.name)}</option>`).join('');
-  ids.forEach(sid => { const el = document.getElementById(sid); if(el) el.innerHTML = opts; });
+      .map(p => `<option value="${p.id}">${p.emoji || '🎾'} ${escHtml(p.name)}</option>`).join('');
+  ids.forEach(sid => { const el = document.getElementById(sid); if (el) el.innerHTML = opts; });
 }
 
 function saveMatch() {
@@ -999,13 +999,13 @@ function saveMatch() {
   const a2 = document.getElementById('teamA2').value;
   const b1 = document.getElementById('teamB1').value;
   const b2 = document.getElementById('teamB2').value;
-  const date   = document.getElementById('match-date').value;
+  const date = document.getElementById('match-date').value;
   const type = 'sets';
   const status = getToggleVal('match-status-toggle') || 'completed';
 
-  if (!a1||!a2||!b1||!b2) return showToast('Seleziona tutti i giocatori','error');
-  if (new Set([a1,a2,b1,b2]).size < 4) return showToast('I giocatori devono essere tutti diversi','error');
-  if (!date) return showToast('Inserisci la data','error');
+  if (!a1 || !a2 || !b1 || !b2) return showToast('Seleziona tutti i giocatori', 'error');
+  if (new Set([a1, a2, b1, b2]).size < 4) return showToast('I giocatori devono essere tutti diversi', 'error');
+  if (!date) return showToast('Inserisci la data', 'error');
   if (status === 'ongoing' && isResultExpired({ date })) {
     return showToast('Una partita senza risultato deve essere completata entro 7 giorni dalla data', 'error');
   }
@@ -1021,7 +1021,7 @@ function saveMatch() {
     if (!sets) return showToast('Completa il punteggio del set', 'error');
   }
 
-  const match = { id: uid(), type, status, teamA:[a1,a2], teamB:[b1,b2], scoreA, scoreB, sets, date };
+  const match = { id: uid(), type, status, teamA: [a1, a2], teamB: [b1, b2], scoreA, scoreB, sets, date };
   state.matches.push(match);
   if (status === 'completed') {
     recomputeAllElo();
@@ -1034,13 +1034,13 @@ function saveMatch() {
   saveState();
   closeModal('modal-match');
   renderMatches();
-  showToast(status==='ongoing' ? '🔴 Scontro avviato in campo!' : '🏆 Vittoria registrata!');
+  showToast(status === 'ongoing' ? '🔴 Scontro avviato in campo!' : '🏆 Vittoria registrata!');
 }
 
 // ── RESULT MODAL ─────────────────────────────────────────────────────────────
 function initResultModal() {
   document.getElementById('btn-save-result').addEventListener('click', saveResult);
-  initToggle('result-status-toggle', () => {});
+  initToggle('result-status-toggle', () => { });
 }
 
 function openResultModal(matchId) {
@@ -1084,7 +1084,7 @@ function saveResult() {
   if (m.type === 'games') {
     scoreA = parseInt(document.getElementById('result-scoreA').value, 10);
     scoreB = parseInt(document.getElementById('result-scoreB').value, 10);
-    if (isNaN(scoreA)||isNaN(scoreB)||scoreA<0||scoreB<0) return showToast('Risultato non valido','error');
+    if (isNaN(scoreA) || isNaN(scoreB) || scoreA < 0 || scoreB < 0) return showToast('Risultato non valido', 'error');
   } else {
     const sets = collectSetScores('result-set-inputs', status === 'ongoing');
     if (!sets) return showToast(status === 'completed' ? 'Inserisci almeno due set validi' : 'Completa il punteggio del set', 'error');
@@ -1103,11 +1103,11 @@ function saveResult() {
     const t = state.tournaments.find(x => x.id === m.tournamentId);
     if (t) {
       const mu = t.matchups.find(x => x.matchId === matchId);
-       if (mu) {
-         mu.scoreA = status === 'completed' ? scoreA : null;
-         mu.scoreB = status === 'completed' ? scoreB : null;
-       }
-       t.status = t.matchups.every(item => item.scoreA !== null) ? 'completed' : 'ongoing';
+      if (mu) {
+        mu.scoreA = status === 'completed' ? scoreA : null;
+        mu.scoreB = status === 'completed' ? scoreB : null;
+      }
+      t.status = t.matchups.every(item => item.scoreA !== null) ? 'completed' : 'ongoing';
     }
   }
 
@@ -1158,7 +1158,7 @@ function renderPlayers() {
   }).join('');
 
   c.querySelectorAll('[data-edit-player]').forEach(b => b.addEventListener('click', () => openEditPlayer(b.dataset.editPlayer)));
-  c.querySelectorAll('[data-del-player]').forEach(b  => b.addEventListener('click', () => confirmDelete('giocatore', () => deletePlayer(b.dataset.delPlayer))));
+  c.querySelectorAll('[data-del-player]').forEach(b => b.addEventListener('click', () => confirmDelete('giocatore', () => deletePlayer(b.dataset.delPlayer))));
   bindPlayerDetailEvents(c);
 }
 
@@ -1191,8 +1191,7 @@ function openPlayerDetail(id) {
       <div class="player-detail-stat stat-loss"><strong>${stats.losses}</strong><span>Sconfitte</span></div>
       <div class="player-detail-stat"><strong>${stats.draws}</strong><span>Pareggi</span></div>
       <div class="player-detail-stat stat-rate"><strong>${winRate}%</strong><span>Win rate</span></div>
-    </div>
-    <p class="player-detail-note">Le statistiche avanzate saranno aggiunte quando verranno definite.</p>`;
+    </div>`;
   const detailImage = body.querySelector('.player-detail-image');
   detailImage.setAttribute('role', 'button');
   detailImage.setAttribute('tabindex', '0');
@@ -1217,7 +1216,7 @@ function initPlayerModal() {
   const picker = document.getElementById('emoji-picker');
   picker.innerHTML = EMOJIS.map(e => `<div class="emoji-option" data-emoji="${e}">${e}</div>`).join('');
   picker.addEventListener('click', e => {
-    const opt = e.target.closest('.emoji-option'); if(!opt) return;
+    const opt = e.target.closest('.emoji-option'); if (!opt) return;
     playSfx('click');
     picker.querySelectorAll('.emoji-option').forEach(o => o.classList.remove('selected'));
     opt.classList.add('selected');
@@ -1238,7 +1237,7 @@ function openAddPlayer() {
 }
 
 function openEditPlayer(id) {
-  const p = state.players.find(x => x.id === id); if(!p) return;
+  const p = state.players.find(x => x.id === id); if (!p) return;
   document.getElementById('modal-player-title').textContent = '👤 Modifica Eroe';
   document.getElementById('edit-player-id').value = p.id;
   document.getElementById('player-name').value = p.name;
@@ -1247,15 +1246,15 @@ function openEditPlayer(id) {
 }
 
 function savePlayer() {
-  const name  = document.getElementById('player-name').value.trim();
-  const eid   = document.getElementById('edit-player-id').value;
+  const name = document.getElementById('player-name').value.trim();
+  const eid = document.getElementById('edit-player-id').value;
   const emoji = document.querySelector('.emoji-option.selected')?.dataset.emoji || '🎾';
-  if (!name) return showToast('Inserisci il nome del giocatore','error');
+  if (!name) return showToast('Inserisci il nome del giocatore', 'error');
   if (eid) {
     const p = state.players.find(x => x.id === eid);
-    if(p) { p.name=name; p.emoji=emoji; }
+    if (p) { p.name = name; p.emoji = emoji; }
   } else {
-    state.players.push({ id:uid(), name, emoji, elo:ELO_DEFAULT });
+    state.players.push({ id: uid(), name, emoji, elo: ELO_DEFAULT });
   }
   saveState();
   playSfx('click');
@@ -1267,7 +1266,7 @@ function savePlayer() {
 function deletePlayer(id) {
   playSfx('delete');
   state.players = state.players.filter(p => p.id !== id);
-  state.matches = state.matches.filter(m => ![...m.teamA,...m.teamB].includes(id));
+  state.matches = state.matches.filter(m => ![...m.teamA, ...m.teamB].includes(id));
   recomputeAllElo();
   saveState();
   renderPlayers();
@@ -1284,7 +1283,7 @@ function confirmDelete(tipo, cb) {
 
 function initConfirmModal() {
   document.getElementById('btn-confirm-ok').addEventListener('click', () => {
-    if(pendingConfirm) { pendingConfirm(); pendingConfirm=null; }
+    if (pendingConfirm) { pendingConfirm(); pendingConfirm = null; }
     closeModal('modal-confirm');
   });
 }
@@ -1295,7 +1294,7 @@ function generateMatchups(couples, format) {
   const result = [];
   for (let leg = 0; leg < legs; leg++) {
     for (let i = 0; i < couples.length; i++) {
-      for (let j = i+1; j < couples.length; j++) {
+      for (let j = i + 1; j < couples.length; j++) {
         result.push({ id: uid(), cA: i, cB: j, leg, scoreA: null, scoreB: null, matchId: null });
       }
     }
@@ -1305,7 +1304,7 @@ function generateMatchups(couples, format) {
 
 function computeTournamentRanking(t) {
   const stats = t.couples.map((_, i) => ({
-    coupleIdx: i, pts:0, wins:0, draws:0, losses:0, diff:0, played:0
+    coupleIdx: i, pts: 0, wins: 0, draws: 0, losses: 0, diff: 0, played: 0
   }));
 
   t.matchups.forEach(mu => {
@@ -1334,7 +1333,7 @@ function computeTournamentRanking(t) {
     }
   });
 
-  return stats.sort((a,b) => {
+  return stats.sort((a, b) => {
     if (b.pts !== a.pts) return b.pts - a.pts;
     if (b.diff !== a.diff) return b.diff - a.diff;
     return b.wins - a.wins;
@@ -1382,7 +1381,7 @@ function renderTournaments() {
     c.innerHTML = `<div class="empty-state"><div class="empty-icon">🎯</div><p>NESSUNA SERATA ARENA ATTIVA.<br>Crea la prima con "+ CREA SERATA".</p></div>`;
     return;
   }
-  const sorted = [...state.tournaments].sort((a,b) => new Date(b.date)-new Date(a.date));
+  const sorted = [...state.tournaments].sort((a, b) => new Date(b.date) - new Date(a.date));
   c.innerHTML = `<div class="tourn-list">${sorted.map(renderTournamentCard).join('')}</div>`;
 
   c.querySelectorAll('[data-tourn-detail]').forEach(b =>
@@ -1396,7 +1395,7 @@ function renderTournaments() {
 function renderTournamentCard(t) {
   const done = t.matchups.filter(m => m.scoreA !== null).length;
   const total = t.matchups.length;
-  const pct = Math.round(done/total*100) || 0;
+  const pct = Math.round(done / total * 100) || 0;
   const isLive = t.status === 'ongoing';
 
   const ranking = computeTournamentRanking(t);
@@ -1408,7 +1407,7 @@ function renderTournamentCard(t) {
     : '';
 
   return `
-    <div class="tourn-card ${isLive?'ongoing':''} ${winnerCouple?'has-winners':''}">
+    <div class="tourn-card ${isLive ? 'ongoing' : ''} ${winnerCouple ? 'has-winners' : ''}">
       ${winners}
       <div class="tourn-header">
         <div>
@@ -1416,9 +1415,9 @@ function renderTournamentCard(t) {
           <div class="tourn-date">📅 ${fmtDate(t.date)}</div>
         </div>
         <div class="tourn-badges">
-          <span class="tourn-badge">${t.matchType==='games'?'🏃 GAMES':'🎾 SETS'}</span>
+          <span class="tourn-badge">${t.matchType === 'games' ? '🏃 GAMES' : '🎾 SETS'}</span>
           <span class="tourn-badge">${t.couples.length} COPPIE</span>
-          <span class="tourn-badge ${isLive?'live':'done'}">${isLive?'⚡ IN CORSO':'🏆 TERMINATO'}</span>
+          <span class="tourn-badge ${isLive ? 'live' : 'done'}">${isLive ? '⚡ IN CORSO' : '🏆 TERMINATO'}</span>
         </div>
       </div>
       <div class="tourn-progress">
@@ -1435,7 +1434,7 @@ function renderTournamentCard(t) {
 function deleteTournament(id) {
   playSfx('delete');
   const t = state.tournaments.find(x => x.id === id);
-  if(t) state.matches = state.matches.filter(m => m.tournamentId !== id);
+  if (t) state.matches = state.matches.filter(m => m.tournamentId !== id);
   state.tournaments = state.tournaments.filter(x => x.id !== id);
   recomputeAllElo();
   saveState();
@@ -1452,7 +1451,7 @@ function openTournamentDetail(tid) {
 
   const ranking = computeTournamentRanking(t);
   const { deltas: eloDeltas, calculations: eloCalculations } = computeTournamentEloBreakdown(t);
-  const rankingRows = ranking.map((r,i) => {
+  const rankingRows = ranking.map((r, i) => {
     const couple = t.couples[r.coupleIdx];
     const names = coupleNamesMarkup(couple, { initials: true, linked: true });
     const position = `#${i + 1}`;
@@ -1463,8 +1462,8 @@ function openTournamentDetail(tid) {
        <td class="t-challenges">${r.played}</td>
        <td class="t-record"><span class="t-record-full">${r.wins}V ${r.draws}N ${r.losses}P</span><span class="t-record-values">${r.wins} ${r.draws} ${r.losses}</span></td>
       <td class="t-pts">${r.pts}</td>
-      <td class="t-elo ${eloDelta > 0 ? 'positive' : eloDelta < 0 ? 'negative' : ''}" title="Variazione ELO generata dai matchup di questa serata">${eloDelta>0?'+':''}${eloDelta}</td>
-      <td class="t-diff" title="Differenza tra game/set vinti e persi">${r.diff>0?'+':''}${r.diff}</td>
+      <td class="t-elo ${eloDelta > 0 ? 'positive' : eloDelta < 0 ? 'negative' : ''}" title="Variazione ELO generata dai matchup di questa serata">${eloDelta > 0 ? '+' : ''}${eloDelta}</td>
+      <td class="t-diff" title="Differenza tra game/set vinti e persi">${r.diff > 0 ? '+' : ''}${r.diff}</td>
     </tr>`;
   }).join('');
 
@@ -1476,20 +1475,20 @@ function openTournamentDetail(tid) {
     const isDone = mu.scoreA !== null;
     const linkedMatch = mu.matchId ? state.matches.find(m => m.id === mu.matchId) : null;
     const expired = isResultExpired(linkedMatch || { date: t.date });
-    const legLabel = t.matchups.filter(x=>x.cA===mu.cA && x.cB===mu.cB).length>1 ? ` <small style="color:var(--neon-cyan)">(g.${mu.leg+1})</small>` : '';
+    const legLabel = t.matchups.filter(x => x.cA === mu.cA && x.cB === mu.cB).length > 1 ? ` <small style="color:var(--neon-cyan)">(g.${mu.leg + 1})</small>` : '';
     const scoreAClass = mu.scoreA > mu.scoreB ? 'matchup-score-win' : mu.scoreA < mu.scoreB ? 'matchup-score-loss' : 'matchup-score-draw';
     const scoreBClass = mu.scoreB > mu.scoreA ? 'matchup-score-win' : mu.scoreB < mu.scoreA ? 'matchup-score-loss' : 'matchup-score-draw';
     const scoreHtml = isDone
       ? `<span class="matchup-score played"><span class="${scoreAClass}">${mu.scoreA}</span> : <span class="${scoreBClass}">${mu.scoreB}</span></span>`
-       : '';
+      : '';
     const actionBtn = expired
       ? '<span class="match-expired-note">SCADUTA</span>'
       : isDone
-      ? `<button class="btn-icon btn-icon-edit" data-tourn-matchup="${tid}__${mu.id}" title="Modifica">✏️</button>`
-      : `<button class="btn-icon btn-icon-score" data-tourn-matchup="${tid}__${mu.id}" title="Registra">⚡ RISULTATO</button>`;
+        ? `<button class="btn-icon btn-icon-edit" data-tourn-matchup="${tid}__${mu.id}" title="Modifica">✏️</button>`
+        : `<button class="btn-icon btn-icon-score" data-tourn-matchup="${tid}__${mu.id}" title="Registra">⚡ RISULTATO</button>`;
 
     return `
-      <div class="matchup-row ${isDone?'done':''} ${expired?'expired':''}">
+      <div class="matchup-row ${isDone ? 'done' : ''} ${expired ? 'expired' : ''}">
         <div class="matchup-couple">${nameA}${legLabel}</div>
         <div class="matchup-center"><span class="matchup-vs">VS</span>${scoreHtml}</div>
         <div class="matchup-couple">${nameB}</div>
@@ -1548,9 +1547,9 @@ function openTournamentDetail(tid) {
 
 function openMatchupResultModal(tid, muId) {
   const t = state.tournaments.find(x => x.id === tid);
-  if(!t) return;
+  if (!t) return;
   const mu = t.matchups.find(x => x.id === muId);
-  if(!mu) return;
+  if (!mu) return;
   const linkedMatch = mu.matchId ? state.matches.find(m => m.id === mu.matchId) : null;
   if (isResultExpired(linkedMatch || { date: t.date })) {
     return showToast('Questo matchup è scaduto: il risultato non può più essere inserito o modificato', 'error');
@@ -1601,11 +1600,11 @@ function initTournamentModal() {
   document.getElementById('btn-suggest-couples').addEventListener('click', suggestCouples);
   document.getElementById('btn-confirm-player-selection').addEventListener('click', confirmPlayerSelection);
 
-  initToggle('tourn-type-toggle', () => {});
+  initToggle('tourn-type-toggle', () => { });
 }
 
 function openNewTournamentModal() {
-  if (state.players.length < 8) return showToast('Servono almeno 8 giocatori nel roster per creare una serata!','error');
+  if (state.players.length < 8) return showToast('Servono almeno 8 giocatori nel roster per creare una serata!', 'error');
   document.getElementById('tourn-name').value = '';
   document.getElementById('tourn-date').value = todayStr();
   setToggleVal('tourn-type-toggle', 'games');
@@ -1627,9 +1626,9 @@ function addCoupleRowAt(idx) {
   const div = document.createElement('div');
   div.className = 'couple-row';
   div.dataset.coupleIdx = idx;
-  const opts = state.players.map(p => `<option value="${p.id}">${p.emoji||'🎾'} ${escHtml(p.name)}</option>`).join('');
+  const opts = state.players.map(p => `<option value="${p.id}">${p.emoji || '🎾'} ${escHtml(p.name)}</option>`).join('');
   div.innerHTML = `
-    <div class="couple-row-label">Coppia ${idx+1}</div>
+    <div class="couple-row-label">Coppia ${idx + 1}</div>
     <select class="couple-p1"><option value="">— Player 1 —</option>${opts}</select>
     <select class="couple-p2"><option value="">— Player 2 —</option>${opts}</select>
     <span></span>`;
@@ -1704,32 +1703,32 @@ function confirmPlayerSelection() {
 }
 
 function updateMatchupPreview() {
-  const legs   = 1;
+  const legs = 1;
   const n = document.querySelectorAll('.couple-row').length;
-  const total = (n*(n-1)/2) * legs;
+  const total = (n * (n - 1) / 2) * legs;
   document.getElementById('tourn-matchup-preview').textContent =
-    `Tabellone: ${n} coppie × ${legs} giron${legs>1?'i':'e'} = ${total} battaglie totali`;
+    `Tabellone: ${n} coppie × ${legs} giron${legs > 1 ? 'i' : 'e'} = ${total} battaglie totali`;
 }
 
 function saveTournament() {
-  const name   = document.getElementById('tourn-name').value.trim();
-  const date   = document.getElementById('tourn-date').value;
-  const type   = getToggleVal('tourn-type-toggle') || 'games';
+  const name = document.getElementById('tourn-name').value.trim();
+  const date = document.getElementById('tourn-date').value;
+  const type = getToggleVal('tourn-type-toggle') || 'games';
   const format = '4c1l';
-  if (!name) return showToast('Inserisci il titolo della serata','error');
-  if (!date) return showToast('Inserisci la data','error');
+  if (!name) return showToast('Inserisci il titolo della serata', 'error');
+  if (!date) return showToast('Inserisci la data', 'error');
 
   const rows = document.querySelectorAll('.couple-row');
   const couples = [];
   for (const row of rows) {
     const p1 = row.querySelector('.couple-p1').value;
     const p2 = row.querySelector('.couple-p2').value;
-    if (!p1||!p2) return showToast('Seleziona tutti i giocatori nelle coppie','error');
-    if (p1 === p2) return showToast('I due giocatori di una coppia devono essere diversi','error');
+    if (!p1 || !p2) return showToast('Seleziona tutti i giocatori nelle coppie', 'error');
+    if (p1 === p2) return showToast('I due giocatori di una coppia devono essere diversi', 'error');
     couples.push([p1, p2]);
   }
   const allIds = couples.flat();
-  if (new Set(allIds).size < allIds.length) return showToast('Un giocatore non può essere in più coppie contemporaneamente','error');
+  if (new Set(allIds).size < allIds.length) return showToast('Un giocatore non può essere in più coppie contemporaneamente', 'error');
 
   const matchups = generateMatchups(couples, format);
   const t = {
@@ -1835,10 +1834,10 @@ function isResultExpired(match) {
 function seedDemoData() {
   if (state.players.length > 0) return;
   [
-    {name:'Marco',emoji:'🦁'},{name:'Luca',emoji:'⚡'},
-    {name:'Sofia',emoji:'🌟'},{name:'Elena',emoji:'🔥'},
-    {name:'Davide',emoji:'🎯'},{name:'Giulia',emoji:'🚀'},
-  ].forEach(n => state.players.push({id:uid(),...n,elo:ELO_DEFAULT}));
+    { name: 'Marco', emoji: '🦁' }, { name: 'Luca', emoji: '⚡' },
+    { name: 'Sofia', emoji: '🌟' }, { name: 'Elena', emoji: '🔥' },
+    { name: 'Davide', emoji: '🎯' }, { name: 'Giulia', emoji: '🚀' },
+  ].forEach(n => state.players.push({ id: uid(), ...n, elo: ELO_DEFAULT }));
   saveState();
 }
 
