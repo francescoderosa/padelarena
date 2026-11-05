@@ -1208,7 +1208,7 @@ function openPlayerDetail(id) {
 function openPlayerImageFullscreen(player) {
   const body = document.getElementById('player-image-fullscreen-body');
   if (!body) return;
-  body.innerHTML = playerImageMarkup(player, 'complete', 'player-fullscreen-image');
+  body.innerHTML = playerImageMarkup(player, 'full', 'player-fullscreen-image');
   openModal('modal-player-image');
 }
 

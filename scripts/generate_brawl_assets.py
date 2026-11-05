@@ -11,13 +11,18 @@ SOURCE_DIR = Path.home() / "Downloads" / "brawlers"
 OUTPUT_DIR = Path(__file__).resolve().parents[1] / "assets" / "players"
 
 PLAYERS = {
-    "DarioPrina_brawl.png": ("mvvjcutrf2ic", (400, 0, 800, 400), None),
-    "AlbiPiro_brawl.png": ("mvvjcutrvgsf", (315, 55, 715, 455), None),
-    "Manu_brawl.png": ("mvwe1vvf4dvi", (315, 50, 715, 450), None),
-    "RobyTorti_brawl.png": ("mvvl69yshvaz", (315, 40, 715, 440), None),
-    "StefanoDelMonte_brawl.png": ("mvvl55fl2w0c", (340, 30, 740, 430), None),
-    "FraProca_brawl.jpeg": ("mvvjcutrdbxy", (55, 30, 455, 430), (0, 0, 509, 1024)),
+    "DarioPrina_brawl.png": ("mvvjcutrf2ic", (440, 40, 800, 400), None),
+    "AlbiPiro_brawl.png": ("mvvjcutrvgsf", (345, 80, 705, 440), None),
+    "Manu_brawl.png": ("mvwe1vvf4dvi", (345, 75, 705, 435), None),
+    "RobyTorti_brawl.png": ("mvvl69yshvaz", (345, 75, 705, 435), None),
+    "StefanoDelMonte_brawl.png": ("mvvl55fl2w0c", (355, 60, 715, 420), None),
+    "FraProca_brawl.jpeg": ("mvvjcutrdbxy", (75, 55, 435, 415), (0, 0, 509, 1024)),
+    "vando.png": ("mvzv329qdc6g", (172, 260, 532, 620), None),
+    "felice.png": ("mvxkz03ccb68", (172, 260, 532, 620), None),
 }
+
+FULL_CANVAS_SIZE = (704, 1024)
+FULL_CHARACTER_HEIGHT = 1024
 
 
 def generate_assets(
@@ -40,17 +45,24 @@ def generate_assets(
         raise ValueError(f"{source_path.name}: no visible pixels after background removal")
 
     character = isolated.crop(alpha_bbox)
-    scale = 960 / character.height
+    scale = min(FULL_CHARACTER_HEIGHT / character.height, (FULL_CANVAS_SIZE[0] - 16) / character.width)
+    character_height = round(character.height * scale)
     character = character.resize(
-        (round(character.width * scale), 960), Image.Resampling.LANCZOS
+        (round(character.width * scale), character_height), Image.Resampling.LANCZOS
     )
-    if character.width > 768:
+    if character.width > FULL_CANVAS_SIZE[0]:
         raise ValueError(
             f"{source_path.name}: normalized character is too wide ({character.width}px)"
         )
 
-    full = Image.new("RGBA", (768, 1024), (0, 0, 0, 0))
-    full.alpha_composite(character, ((768 - character.width) // 2, 64))
+    full = Image.new("RGBA", FULL_CANVAS_SIZE, (0, 0, 0, 0))
+    full.alpha_composite(
+        character,
+        (
+            (FULL_CANVAS_SIZE[0] - character.width) // 2,
+            FULL_CANVAS_SIZE[1] - character.height,
+        ),
+    )
     full.save(OUTPUT_DIR / f"{player_id}_full.png", "PNG", optimize=True)
 
 
@@ -58,7 +70,10 @@ def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     for filename, (player_id, face_box, complete_box) in PLAYERS.items():
         generate_assets(SOURCE_DIR / filename, player_id, face_box, complete_box)
-        print(f"{filename} -> {player_id}_closeup.png, {player_id}_full.png, {player_id}_complete.png")
+        print(
+            f"{filename} -> {player_id}_closeup.png, "
+            f"{player_id}_full.png, {player_id}_complete.png"
+        )
 
 
 if __name__ == "__main__":

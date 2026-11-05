@@ -2069,6 +2069,7 @@ select option { background: #2a1a66; }
   .rank-elo { font-size: 1.5rem; }
   .player-detail-hero { grid-template-columns: 1fr 1fr; gap: 12px; }
   .player-detail-image { height: 190px; }
+  .player-image-fullscreen #player-image-fullscreen-body { padding: 12px; }
   .player-detail-elo { font-size: 2.6rem; }
   .player-detail-stats { grid-template-columns: repeat(3, 1fr); }
   .match-teams { gap: 8px; }

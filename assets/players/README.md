@@ -23,8 +23,9 @@ Recommended source preparation:
 
 ## Normalize full-body images
 
-The `*_full.png` files can be normalized to a shared `768x1024` transparent
-canvas, with the visible character set to `960px` high:
+The `*_full.png` files can be normalized to a shared `704x1024` transparent
+canvas, with the visible character set to `1024px` high. The Brawl generator in
+`scripts/generate_brawl_assets.py` uses the same dimensions:
 
 ```bash
 python3 normalize_full_images.py

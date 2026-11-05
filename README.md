@@ -32,6 +32,22 @@ Il file di destinazione viene creato in formato PNG RGBA con il canale alpha per
 Per preparare e uniformare le immagini full-body dei giocatori, consulta la
 [guida agli asset dei giocatori](assets/players/README.md).
 
+### Generazione degli asset Brawl
+
+Il generatore legge le immagini `*_brawl.png`/`*_brawl.jpeg` da
+`~/Downloads/brawlers` e produce automaticamente i tre asset associati agli ID
+dei giocatori in `assets/players`:
+
+```bash
+python3 -m pip install Pillow rembg
+python3 scripts/generate_brawl_assets.py
+```
+
+Il comando genera i file `_closeup.png`, `_full.png` e `_complete.png`.
+`_full` è un PNG trasparente verticale `704x1024`, mentre `_complete` conserva
+la scena originale e `_closeup` produce un ritratto quadrato ravvicinato.
+Il primo avvio di `rembg` può scaricare il modello di rimozione dello sfondo.
+
 ---
 
 ## ☁️ Sincronizzazione Multi-dispositivo
