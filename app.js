@@ -19,6 +19,16 @@ const RESULT_WINDOW_DAYS = 7;
 const STORE_KEY = 'padelRanking_v2';
 const SYNC_KEY = 'padelSync_config_v1';
 const SYNC_ENDPOINT = '/api/sync';
+const DEV_HOSTNAMES = new Set([
+  'localhost',
+  '127.0.0.1',
+  '::1',
+  'padelarena-dev.pages.dev',
+]);
+const APP_ENV = (
+  window.location.hostname === 'controvetro.dev.padelmate.it'
+  || DEV_HOSTNAMES.has(window.location.hostname)
+) ? 'dev' : 'prd';
 
 const TOURNAMENT_SCORING = Object.freeze({
   LEGACY_MATCH_POINTS: 'match-points',
@@ -1843,11 +1853,25 @@ function seedDemoData() {
 
 function registerSW() {
   if ('serviceWorker' in navigator)
-    navigator.serviceWorker.register('sw.js?v=4.12', { updateViaCache: 'none' }).catch(e => console.warn('SW', e));
+    navigator.serviceWorker.register('sw.js?v=4.13', { updateViaCache: 'none' }).catch(e => console.warn('SW', e));
+}
+
+function initEnvironmentBanner() {
+  const banner = document.getElementById('environment-banner');
+  const label = document.getElementById('environment-banner-label');
+  if (!banner || !label) return;
+
+  const isDev = APP_ENV === 'dev';
+  banner.classList.add(isDev ? 'environment-banner-dev' : 'environment-banner-prd');
+  label.textContent = isDev
+    ? 'AMBIENTE DEV · dati e sincronizzazione separati dalla produzione'
+    : 'AMBIENTE PRD · produzione';
+  banner.hidden = false;
 }
 
 // ── Init ─────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  initEnvironmentBanner();
   loadSyncConfig();
   loadState();
 
