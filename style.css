@@ -127,6 +127,24 @@ body {
 }
 
 /* ── HEADER ─────────────────────────────────────────────────── */
+.environment-banner {
+  position: relative;
+  z-index: 101;
+  width: 100%;
+  padding: 6px 16px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+  text-align: center;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--ink);
+  box-shadow: 0 3px 0 rgba(27, 13, 61, 0.35);
+}
+.environment-banner-dev { background: var(--bs-orange); }
+.environment-banner-prd { background: var(--bs-green); }
+
 .header {
   position: sticky;
   top: 0;

@@ -65,11 +65,15 @@ La sincronizzazione condivisa usa **JSONBin.io** tramite una **Cloudflare Pages 
 Il browser conosce soltanto l'endpoint relativo `/api/sync`: non vede né `JSONBIN_BIN_ID` né `JSONBIN_API_KEY`. Disattivare l'auto-sync interrompe gli invii e il polling automatici, ma non disabilita le azioni manuali.
 
 ### Configurazione Cloudflare
-Nel progetto Cloudflare Pages vai su **Settings → Environment variables** e aggiungi come secret nell'ambiente **Production**:
+Nel progetto Cloudflare Pages vai su **Settings → Environment variables** e aggiungi come secret nell'ambiente corretto:
 - `JSONBIN_BIN_ID`: ID del Bin JSONBin condiviso.
 - `JSONBIN_API_KEY`: Access Key JSONBin.
 
+Il progetto production usa il bin production; il progetto dev (`controvetro.dev.padelmate.it`) usa un bin e una chiave distinti. Il nome dell'ambiente mostrato nell'interfaccia viene determinato dal dominio, senza esporre i secret al browser.
+
 Dopo aver salvato i secret, esegui un nuovo deploy. La Function server-side inoltra le richieste a JSONBin senza esporre la chiave al browser. Se i secret mancano, l'endpoint restituisce un errore di configurazione e l'app resta disponibile con i dati locali.
+
+Il workflow GitHub `JSONBin Production Backup` esegue il backup del solo bin production usando i secret GitHub `JSONBIN_BIN_ID` e `JSONBIN_API_KEY`. Questi secret devono quindi puntare esclusivamente alla produzione.
 
 Per sicurezza, revoca e sostituisci la vecchia Access Key, perché una versione storica del repository la conteneva. I secret di Cloudflare non devono essere inseriti in `app.js`, nel manifest, nel Service Worker o in qualsiasi file statico pubblicato.
 
