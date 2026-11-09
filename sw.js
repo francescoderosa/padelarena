@@ -43,6 +43,9 @@ self.addEventListener('notificationclick', event => {
 });
 
 self.addEventListener('fetch', e => {
+  const requestUrl = new URL(e.request.url);
+  if (!['http:', 'https:'].includes(requestUrl.protocol)) return;
+
   if (e.request.url.includes('/api/') || e.request.url.includes('jsonbin.io') || e.request.url.includes('fonts.googleapis') || e.request.url.includes('fonts.gstatic')) {
     return;
   }

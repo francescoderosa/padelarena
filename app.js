@@ -19,6 +19,9 @@ const RESULT_WINDOW_DAYS = 7;
 const STORE_KEY = 'padelRanking_v2';
 const SYNC_KEY = 'padelSync_config_v1';
 const SYNC_ENDPOINT = '/api/sync';
+const PUSH_INSTALL_KEY = 'controvetro_push_install_id_v1';
+const PUSH_PUBLIC_KEY_ENDPOINT = '/api/push/public-key';
+const PUSH_SUBSCRIBE_ENDPOINT = '/api/push/subscribe';
 const DEV_HOSTNAMES = new Set([
   'localhost',
   '127.0.0.1',
@@ -59,6 +62,7 @@ let pendingConfirm = null;
 let syncDebounceTimer = null;
 let isSyncing = false;
 let activePage = 'ranking';
+let pushPublicKey = null;
 
 // ── ARCADE AUDIO SYNTHESIZER (Pure Web Audio API, Zero Dependencies) ───────
 let audioCtx = null;
