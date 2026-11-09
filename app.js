@@ -2067,10 +2067,13 @@ function initEnvironmentBanner() {
   if (!banner || !label) return;
 
   const isDev = APP_ENV === 'dev';
-  banner.classList.add(isDev ? 'environment-banner-dev' : 'environment-banner-prd');
-  label.textContent = isDev
-    ? 'AMBIENTE DEV · dati e sincronizzazione separati dalla produzione'
-    : 'AMBIENTE PRD · produzione';
+  if (!isDev) {
+    banner.hidden = true;
+    return;
+  }
+
+  banner.classList.add('environment-banner-dev');
+  label.textContent = 'AMBIENTE DEV · dati e sincronizzazione separati dalla produzione';
   banner.hidden = false;
 }
 
