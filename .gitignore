@@ -2,3 +2,8 @@
 .env
 .env.dev
 .wrangler/
+.DS_Store
+.serena/
+env_padelranking/
+.tool-versions
+node_modules/

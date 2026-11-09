@@ -1912,6 +1912,42 @@ select option { background: #2a1a66; }
   accent-color: var(--bs-yellow);
   cursor: pointer;
 }
+.push-settings-box {
+  padding: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+}
+.push-settings-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+.push-settings-heading strong {
+  color: #fff;
+  font-family: var(--font-display);
+}
+.push-settings-heading p,
+.push-help {
+  margin: 5px 0 0;
+  color: var(--text-dim);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+.push-status {
+  flex-shrink: 0;
+  color: var(--bs-yellow);
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  text-align: right;
+}
+.push-actions-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
 .sync-status-badge-row {
   display: flex;
   justify-content: space-between;

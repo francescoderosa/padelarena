@@ -430,6 +430,162 @@ async function pullFromCloud(options = { silent: false, force: false }) {
   }
 }
 
+// ── WEB PUSH ──────────────────────────────────────────────────────────────────
+function getPushInstallId() {
+  let installId = localStorage.getItem(PUSH_INSTALL_KEY);
+  if (!installId) {
+    installId = globalThis.crypto?.randomUUID?.() || uid();
+    localStorage.setItem(PUSH_INSTALL_KEY, installId);
+  }
+  return installId;
+}
+
+function isPushSupported() {
+  return 'Notification' in window
+    && 'serviceWorker' in navigator
+    && 'PushManager' in window;
+}
+
+function pushKeyToBytes(key) {
+  const padding = '='.repeat((4 - (key.length % 4)) % 4);
+  const base64 = (key + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const raw = atob(base64);
+  return Uint8Array.from(raw, char => char.charCodeAt(0));
+}
+
+function bytesToPushKey(bytes) {
+  return btoa(String.fromCharCode(...new Uint8Array(bytes)))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
+
+async function updatePushUI() {
+  const status = document.getElementById('push-status');
+  const enable = document.getElementById('btn-enable-push');
+  const disable = document.getElementById('btn-disable-push');
+  const help = document.getElementById('push-help');
+  if (!status || !enable || !disable || !help) return;
+
+  enable.hidden = false;
+  disable.hidden = true;
+
+  if (!isPushSupported()) {
+    status.textContent = 'Non disponibile';
+    help.textContent = 'Questo browser non supporta le notifiche push.';
+    enable.hidden = true;
+    return;
+  }
+
+  if (Notification.permission === 'denied') {
+    status.textContent = 'Bloccate';
+    help.textContent = 'Abilita le notifiche dalle impostazioni del browser per poterle attivare.';
+    return;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+    if (subscription) {
+      status.textContent = 'Attive';
+      help.textContent = 'Riceverai le comunicazioni del club su questo dispositivo.';
+      enable.hidden = true;
+      disable.hidden = false;
+      return;
+    }
+  } catch (error) {
+    console.warn('Push status error:', error);
+  }
+
+  status.textContent = 'Non attive';
+  help.textContent = 'Attivale per ricevere gli annunci anche quando l’app non è aperta.';
+}
+
+async function loadPushPublicKey() {
+  if (pushPublicKey) return pushPublicKey;
+  const response = await fetch(PUSH_PUBLIC_KEY_ENDPOINT);
+  if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  const data = await response.json();
+  if (typeof data.publicKey !== 'string' || !data.publicKey) {
+    throw new Error('Chiave VAPID non valida');
+  }
+  pushPublicKey = data.publicKey;
+  return pushPublicKey;
+}
+
+async function enablePushNotifications() {
+  if (!isPushSupported()) return updatePushUI();
+
+  const enable = document.getElementById('btn-enable-push');
+  if (enable) enable.disabled = true;
+
+  try {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      await updatePushUI();
+      if (permission === 'denied') showToast('Notifiche bloccate dal browser', 'error');
+      return;
+    }
+
+    const registration = await registerSW() || await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: pushKeyToBytes(await loadPushPublicKey()),
+    });
+    const p256dh = subscription.getKey('p256dh');
+    const auth = subscription.getKey('auth');
+    if (!p256dh || !auth) throw new Error('Chiavi subscription non disponibili');
+
+    const response = await fetch(PUSH_SUBSCRIBE_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        installId: getPushInstallId(),
+        subscription: {
+          endpoint: subscription.endpoint,
+          keys: { p256dh: bytesToPushKey(p256dh), auth: bytesToPushKey(auth) },
+        },
+      }),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    await updatePushUI();
+    showToast('🔔 Notifiche attivate');
+  } catch (error) {
+    console.warn('Push enable error:', error);
+    showToast('Attivazione notifiche non riuscita', 'error');
+    await updatePushUI();
+  } finally {
+    if (enable) enable.disabled = false;
+  }
+}
+
+async function disablePushNotifications() {
+  const disable = document.getElementById('btn-disable-push');
+  if (disable) disable.disabled = true;
+
+  try {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+    if (!subscription) return updatePushUI();
+
+    const response = await fetch(PUSH_SUBSCRIBE_ENDPOINT, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint: subscription.endpoint }),
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    await subscription.unsubscribe();
+    await updatePushUI();
+    showToast('Notifiche disattivate');
+  } catch (error) {
+    console.warn('Push disable error:', error);
+    showToast('Disattivazione notifiche non riuscita', 'error');
+  } finally {
+    if (disable) disable.disabled = false;
+  }
+}
+
 // ── ID ──────────────────────────────────────────────────────────────────────
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
 
@@ -1761,6 +1917,8 @@ function initSyncModal() {
   const btnPush = document.getElementById('btn-sync-push');
   const btnToggleSound = document.getElementById('btn-toggle-sound');
   const volumeControl = document.getElementById('sound-volume');
+  const btnEnablePush = document.getElementById('btn-enable-push');
+  const btnDisablePush = document.getElementById('btn-disable-push');
 
   if (btnToggleSound) {
     btnToggleSound.addEventListener('click', toggleSound);
@@ -1770,6 +1928,9 @@ function initSyncModal() {
     volumeControl.addEventListener('input', event => setSoundVolume(event.target.value));
     updateVolumeControl();
   }
+
+  if (btnEnablePush) btnEnablePush.addEventListener('click', enablePushNotifications);
+  if (btnDisablePush) btnDisablePush.addEventListener('click', disablePushNotifications);
 
   if (btnOpenModal) {
     btnOpenModal.addEventListener('click', openSyncModal);
@@ -1814,6 +1975,7 @@ function initEloInfoModal() {
 function openSyncModal() {
   document.getElementById('sync-auto').checked = !!syncConfig.autoSync;
   updateSyncUI(isSyncing ? 'syncing' : 'synced');
+  updatePushUI();
   openModal('modal-sync');
 }
 
@@ -1852,8 +2014,15 @@ function seedDemoData() {
 }
 
 function registerSW() {
-  if ('serviceWorker' in navigator)
-    navigator.serviceWorker.register('sw.js?v=4.13', { updateViaCache: 'none' }).catch(e => console.warn('SW', e));
+  if ('serviceWorker' in navigator) {
+    return navigator.serviceWorker
+      .register('sw.js?v=4.14', { updateViaCache: 'none' })
+      .catch(e => {
+        console.warn('SW', e);
+        return null;
+      });
+  }
+  return Promise.resolve(null);
 }
 
 function initEnvironmentBanner() {

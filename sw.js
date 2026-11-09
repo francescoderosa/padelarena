@@ -1,5 +1,5 @@
-const CACHE_NAME = 'controvetro-v4.13';
-const ASSETS = ['./', './index.html', './style.css?v=4.13', './app.js?v=4.13', './manifest.json', './assets/logo-controvetro.png', './icons/icon-192.png', './icons/icon-512.png'];
+const CACHE_NAME = 'controvetro-v4.14';
+const ASSETS = ['./', './index.html', './style.css?v=4.14', './app.js?v=4.14', './manifest.json', './assets/logo-controvetro.png', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE_NAME).then(c => c.addAll(ASSETS)));
@@ -11,6 +11,35 @@ self.addEventListener('activate', e => {
     Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)))
   ));
   self.clients.claim();
+});
+
+self.addEventListener('push', event => {
+  let payload = { title: 'Controvetro', body: 'Hai una nuova comunicazione del club.', url: '/' };
+  try {
+    if (event.data) payload = { ...payload, ...event.data.json() };
+  } catch (error) {
+    console.warn('Push payload non valido', error);
+  }
+
+  event.waitUntil(self.registration.showNotification(payload.title, {
+    body: payload.body,
+    tag: payload.tag || 'controvetro-announcement',
+    data: { url: payload.url || '/' },
+    icon: './icons/icon-192.png',
+    badge: './icons/icon-192.png',
+  }));
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const targetUrl = new URL(event.notification.data?.url || '/', self.location.origin).href;
+
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(clients => {
+    const existing = clients.find(client => new URL(client.url).origin === self.location.origin);
+    if (!existing) return self.clients.openWindow(targetUrl);
+    if ('navigate' in existing && existing.url !== targetUrl) existing.navigate(targetUrl);
+    return existing.focus();
+  }));
 });
 
 self.addEventListener('fetch', e => {

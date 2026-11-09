@@ -89,7 +89,33 @@ Per sicurezza, revoca e sostituisci la vecchia Access Key, perché una versione 
 
 La Function viene pubblicata insieme al sito: `functions/api/sync.js` diventa l'endpoint `/api/sync`. Non è necessario creare o gestire un Worker separato.
 
-Il vecchio workflow GitHub Pages (`.github/workflows/deploy.yml`) resta nel repository per riferimento, ma non è il percorso di deploy attivo e non fornisce il proxy server-side per i secret.
+### Configurazione Web Push e D1
+
+Le notifiche push usano D1 soltanto per le subscription dei dispositivi. I dati applicativi continuano a usare JSONBin. Per creare e collegare il database:
+
+```bash
+npx wrangler d1 create controvetro-push
+npx wrangler d1 migrations apply controvetro-push --remote
+```
+
+Prima di applicare la migrazione, collega il database al progetto Pages dal dashboard Cloudflare in **Settings → Bindings → D1 database bindings**, usando:
+
+- variable name: `PUSH_DB`
+- database: `controvetro-push`
+
+Genera una coppia VAPID una sola volta e configura i secret nell'ambiente Pages corretto:
+
+```bash
+node --input-type=module -e "import { generateVapidKeys } from '@mmmike/web-push/vapid'; console.log(await generateVapidKeys())"
+npx wrangler pages secret put VAPID_PUBLIC_KEY
+npx wrangler pages secret put VAPID_PRIVATE_KEY
+npx wrangler pages secret put VAPID_SUBJECT
+npx wrangler pages secret put PUSH_ADMIN_SECRET
+```
+
+`VAPID_PRIVATE_KEY` e `PUSH_ADMIN_SECRET` non devono mai essere pubblicati. `VAPID_PUBLIC_KEY` viene restituita dal solo endpoint server `/api/push/public-key` e usata dal browser per creare la subscription. L'endpoint amministrativo `/api/push/send` richiede l'header `X-Admin-Secret` e non viene chiamato dalla PWA.
+
+La migrazione SQL si trova in `migrations/0001_push_subscriptions.sql`. In locale si può usare un database D1 locale con `wrangler pages dev .`; se il binding non è disponibile, l'app resta utilizzabile e la sezione notifiche segnala la configurazione mancante.
 
 ### Avvio locale con Wrangler
 
@@ -111,7 +137,7 @@ Il Service Worker (`sw.js`) usa una cache versionata (`CACHE_NAME`), ma per HTML
 La registrazione usa `updateViaCache: 'none'`:
 
 ```js
-navigator.serviceWorker.register('sw.js?v=4.11', { updateViaCache: 'none' });
+  navigator.serviceWorker.register('sw.js?v=4.14', { updateViaCache: 'none' });
 ```
 
 Il parametro `?v=4.11` è un ulteriore cache busting, ma non deve necessariamente essere incrementato a ogni modifica: il browser controlla comunque il contenuto aggiornato di `sw.js`. La modifica del file è sufficiente per rilevare una nuova versione del Service Worker. Incrementare anche `CACHE_NAME` resta utile per invalidare esplicitamente la cache precedente.

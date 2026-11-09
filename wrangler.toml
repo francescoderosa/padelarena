@@ -2,5 +2,7 @@ name = "controvetro-pro-league"
 compatibility_date = "2026-05-03"
 pages_build_output_dir = "."
 
-[secrets]
-required = ["JSONBIN_BIN_ID", "JSONBIN_API_KEY"]
+[[d1_databases]]
+binding = "PUSH_DB"
+database_name = "controvetro-push"
+database_id = "0a4f5fe0-c302-4e3c-98b1-9c8705fe310b"
