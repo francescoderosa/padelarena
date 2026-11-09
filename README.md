@@ -117,6 +117,144 @@ npx wrangler pages secret put PUSH_ADMIN_SECRET
 
 La migrazione SQL si trova in `migrations/0001_push_subscriptions.sql`. In locale si può usare un database D1 locale con `wrangler pages dev .`; se il binding non è disponibile, l'app resta utilizzabile e la sezione notifiche segnala la configurazione mancante.
 
+## LOGS
+
+Le Pages Functions vengono eseguite sul deployment Cloudflare Pages e i loro log si possono consultare con Wrangler oppure dalla dashboard Cloudflare. I log riguardano le richieste server-side alle Function; un errore che avviene nel browser prima della `fetch` non apparirà qui e va controllato nella Console del browser.
+
+### Tail in tempo reale con Wrangler
+
+Per osservare le richieste del progetto dev, apri un terminale nella root del repository ed esegui:
+
+```bash
+npx wrangler pages deployment tail \
+  --project-name padelarena-dev \
+  --environment production \
+  --format pretty
+```
+
+Lascia il comando attivo, esegui l'operazione nell'app e interrompi il tail con `Ctrl+C`. Per il progetto production sostituisci `padelarena-dev` con `padelarena`. `--environment production` indica l'ambiente Pages del progetto, non il dominio applicativo: il progetto `padelarena-dev` pubblica comunque il dominio dev `controvetro.dev.padelmate.it`.
+
+Per filtrare gli errori del deployment:
+
+```bash
+npx wrangler pages deployment tail \
+  --project-name padelarena-dev \
+  --environment production \
+  --status error \
+  --format pretty
+```
+
+In alternativa, dalla dashboard: **Workers & Pages → padelarena-dev → deployment attivo → View details → Functions / Real-time logs**. La lista dei deployment è consultabile con:
+
+```bash
+npx wrangler pages deployment list --project-name padelarena-dev
+```
+
+### Costruire le `curl`
+
+Le API sono relative al dominio dell'ambiente. È preferibile definire prima la base URL:
+
+```bash
+export BASE_URL="https://controvetro.dev.padelmate.it"
+```
+
+La chiave pubblica VAPID è leggibile senza autenticazione:
+
+```bash
+curl -i "$BASE_URL/api/push/public-key"
+```
+
+Il preflight CORS si verifica con `OPTIONS`:
+
+```bash
+curl -i -X OPTIONS "$BASE_URL/api/push/subscribe" \
+  -H "Origin: $BASE_URL" \
+  -H "Access-Control-Request-Method: POST" \
+  -H "Access-Control-Request-Headers: content-type"
+```
+
+Per testare la validazione dell'endpoint subscription si può inviare un payload incompleto. Questo deve restituire `400` e conferma che la Function è raggiungibile:
+
+```bash
+curl -i -X POST "$BASE_URL/api/push/subscribe" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+Una subscription reale non va inventata: viene generata dal browser e contiene `endpoint`, `keys.p256dh` e `keys.auth`. Il client la invia automaticamente a `/api/push/subscribe` insieme all'`installId`. Per inviare una notifica di test è invece necessario usare l'endpoint amministrativo e il secret corretto dell'ambiente:
+
+#### Test invio notifica
+
+Sul terminale usa il secret configurato per `padelarena-dev` e il dominio dev:
+
+```bash
+export PUSH_ADMIN_SECRET="<PUSH_ADMIN_SECRET dell'ambiente>"
+
+curl -i -X POST "$BASE_URL/api/push/send" \
+  -H "Content-Type: application/json" \
+  -H "X-Admin-Secret: $PUSH_ADMIN_SECRET" \
+  -d '{
+    "title": "Test Controvetro",
+    "body": "Notifica push di prova",
+    "url": "/"
+  }'
+```
+
+Una risposta `200` conferma l'elaborazione del batch e include contatori simili a `total`, `delivered`, `removed` e `failed`. Con una subscription attiva, `delivered` dovrebbe essere almeno `1` e la notifica dovrebbe comparire sul dispositivo entro pochi secondi. Per production imposta invece:
+
+```bash
+export BASE_URL="https://controvetro.padelmate.it"
+```
+
+Non inserire `VAPID_PRIVATE_KEY` o `PUSH_ADMIN_SECRET` nel repository, nei comandi condivisi o nel codice client. Se il tail non mostra alcuna richiesta quando si clicca un pulsante, controllare prima la Console del browser: il problema può trovarsi in `Notification.requestPermission()`, nel Service Worker o in `PushManager.subscribe()` e quindi precedere la chiamata HTTP.
+
+## PUSH NOTIFICATIONS
+
+### Modello Web Push
+
+Web Push è un protocollo per consegnare un messaggio a un browser anche quando la pagina web non è aperta. Il modello separa il sito applicativo dal **push service** del browser, ad esempio quello gestito da Google, Mozilla o Apple. Il sito non apre una connessione persistente verso ogni dispositivo: registra una subscription e usa il relativo endpoint per chiedere al push service di consegnare il messaggio.
+
+Una subscription contiene principalmente:
+
+- `endpoint`: URL univoco del push service per quel browser e quel dispositivo;
+- `p256dh`: chiave pubblica effimera del client;
+- `auth`: segreto usato nel materiale crittografico della subscription.
+
+Il browser crea questi valori solo dopo una richiesta esplicita dell'utente. Il server usa le chiavi VAPID per autenticare il mittente e cifra il payload secondo il protocollo Web Push. Il push service inoltra il contenuto cifrato senza dover conoscere il significato applicativo del messaggio. Il Service Worker del sito riceve l'evento `push`, mostra la notifica con `showNotification()` e gestisce l'apertura o il focus della PWA tramite `notificationclick`.
+
+Il consenso alle notifiche e la subscription sono concetti distinti: il permesso autorizza il browser a mostrare notifiche, mentre la subscription identifica la destinazione tecnica a cui il server può inviare i messaggi. Una subscription può diventare invalida, per esempio dopo la revoca del permesso o la sostituzione del dispositivo, quindi gli endpoint che rispondono `404` o `410` devono essere rimossi.
+
+### Integrazione con Cloudflare
+
+In questo progetto Cloudflare Pages ospita sia gli asset statici della PWA sia le Pages Functions sotto `functions/api/`. Il binding D1 `PUSH_DB` collega le Function al database SQLite serverless `controvetro-push` senza esporre credenziali al browser.
+
+Il flusso server-side è il seguente:
+
+1. `GET /api/push/public-key` restituisce solo `VAPID_PUBLIC_KEY`.
+2. Il browser usa la chiave pubblica per chiamare `PushManager.subscribe()`.
+3. `POST /api/push/subscribe` valida e salva la subscription nella tabella D1 `push_subscriptions`.
+4. Un operatore o un servizio autorizzato chiama `POST /api/push/send` con `X-Admin-Secret`.
+5. La Function legge da D1 le subscription abilitate e usa `VAPID_PRIVATE_KEY` e `VAPID_SUBJECT` per inviare il batch tramite `@mmmike/web-push`.
+6. Gli endpoint non più validi vengono rimossi da D1; il risultato riporta consegnate, rimosse e fallite.
+
+Cloudflare gestisce l'esecuzione edge delle Function, il binding verso D1 e la protezione dei secret configurati nell'ambiente Pages. D1 contiene solo le destinazioni push e i metadati tecnici minimi: non contiene il ranking, le partite o i tornei, che continuano a essere sincronizzati tramite JSONBin.
+
+### Implementazione nel progetto
+
+Il client mantiene un identificativo anonimo persistente (`installId`) in `localStorage`, non un account. Quando l'utente apre la modale delle impostazioni, l'interfaccia verifica il supporto a `Notification`, `serviceWorker` e `PushManager`. Il permesso viene richiesto esclusivamente dopo il click su **ATTIVA NOTIFICHE**. Dopo la creazione della subscription, `app.js` serializza le chiavi binarie in Base64URL e invia il payload alla Pages Function.
+
+I file principali sono:
+
+- `app.js`: gestione del permesso, registrazione Service Worker, creazione/disattivazione subscription e aggiornamento dello stato nella modale impostazioni;
+- `sw.js`: ricezione dell'evento `push`, fallback del payload, visualizzazione della notifica e gestione del click;
+- `functions/api/push/public-key.js`: pubblicazione della chiave VAPID pubblica;
+- `functions/api/push/subscribe.js`: validazione, upsert e cancellazione delle subscription D1;
+- `functions/api/push/send.js`: invio amministrativo autenticato, batch e rimozione degli endpoint scaduti;
+- `functions/api/push/_shared.js`: risposte JSON, CORS e validazioni comuni;
+- `migrations/0001_push_subscriptions.sql`: schema della tabella D1.
+
+La funzionalità attuale è volutamente generica: consente di iscrivere un dispositivo e inviare comunicazioni del club. Account, ownership del player, membership e notifiche personalizzate basate su eventi di dominio appartengono a iterazioni successive e non sono necessari per il primo canale push.
+
 ### Avvio locale con Wrangler
 
 Wrangler è già installato nel progetto. Per avviare anche la Function `/api/sync`:
