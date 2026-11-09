@@ -22,6 +22,9 @@ const SYNC_ENDPOINT = '/api/sync';
 const PUSH_INSTALL_KEY = 'controvetro_push_install_id_v1';
 const PUSH_PUBLIC_KEY_ENDPOINT = '/api/push/public-key';
 const PUSH_SUBSCRIBE_ENDPOINT = '/api/push/subscribe';
+const INSTALL_PROMPT_KEY = 'controvetro_install_prompt_dismissed_v1';
+const INSTALL_PROMPT_DELAY_MS = 30000;
+const INSTALL_PROMPT_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000;
 const DEV_HOSTNAMES = new Set([
   'localhost',
   '127.0.0.1',
@@ -466,23 +469,24 @@ function bytesToPushKey(bytes) {
 
 async function updatePushUI() {
   const status = document.getElementById('push-status');
-  const enable = document.getElementById('btn-enable-push');
-  const disable = document.getElementById('btn-disable-push');
+  const toggle = document.getElementById('push-toggle');
   const help = document.getElementById('push-help');
-  if (!status || !enable || !disable || !help) return;
+  if (!status || !toggle || !help) return;
 
-  enable.hidden = false;
-  disable.hidden = true;
+  toggle.checked = false;
+  toggle.disabled = false;
+  status.dataset.state = 'off';
 
   if (!isPushSupported()) {
-    status.textContent = 'Non disponibile';
+    status.textContent = 'NON DISPONIBILI';
     help.textContent = 'Questo browser non supporta le notifiche push.';
-    enable.hidden = true;
+    toggle.disabled = true;
     return;
   }
 
   if (Notification.permission === 'denied') {
-    status.textContent = 'Bloccate';
+    status.textContent = 'BLOCCATE';
+    status.dataset.state = 'blocked';
     help.textContent = 'Abilita le notifiche dalle impostazioni del browser per poterle attivare.';
     return;
   }
@@ -491,17 +495,17 @@ async function updatePushUI() {
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.getSubscription();
     if (subscription) {
-      status.textContent = 'Attive';
+      status.textContent = 'ATTIVE';
+      status.dataset.state = 'on';
+      toggle.checked = true;
       help.textContent = 'Riceverai le comunicazioni del club su questo dispositivo.';
-      enable.hidden = true;
-      disable.hidden = false;
       return;
     }
   } catch (error) {
     console.warn('Push status error:', error);
   }
 
-  status.textContent = 'Non attive';
+  status.textContent = 'NON ATTIVE';
   help.textContent = 'Attivale per ricevere gli annunci anche quando l’app non è aperta.';
 }
 
@@ -520,8 +524,8 @@ async function loadPushPublicKey() {
 async function enablePushNotifications() {
   if (!isPushSupported()) return updatePushUI();
 
-  const enable = document.getElementById('btn-enable-push');
-  if (enable) enable.disabled = true;
+  const toggle = document.getElementById('push-toggle');
+  if (toggle) toggle.disabled = true;
 
   try {
     const permission = await Notification.requestPermission();
@@ -560,13 +564,13 @@ async function enablePushNotifications() {
     showToast('Attivazione notifiche non riuscita', 'error');
     await updatePushUI();
   } finally {
-    if (enable) enable.disabled = false;
+    if (toggle) toggle.disabled = false;
   }
 }
 
 async function disablePushNotifications() {
-  const disable = document.getElementById('btn-disable-push');
-  if (disable) disable.disabled = true;
+  const toggle = document.getElementById('push-toggle');
+  if (toggle) toggle.disabled = true;
 
   try {
     const registration = await navigator.serviceWorker.ready;
@@ -586,7 +590,7 @@ async function disablePushNotifications() {
     console.warn('Push disable error:', error);
     showToast('Disattivazione notifiche non riuscita', 'error');
   } finally {
-    if (disable) disable.disabled = false;
+    if (toggle) toggle.disabled = false;
   }
 }
 
@@ -723,6 +727,31 @@ function openModal(id) {
 function closeModal(id) {
   playSfx('click');
   document.getElementById(id).classList.add('hidden');
+}
+
+function isAppInstalled() {
+  return window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true
+    || document.referrer.startsWith('android-app://');
+}
+
+function dismissInstallPrompt() {
+  localStorage.setItem(INSTALL_PROMPT_KEY, String(Date.now()));
+  closeModal('modal-install');
+}
+
+function initInstallPrompt() {
+  const dismissButtons = document.querySelectorAll('[data-dismiss-install]');
+  dismissButtons.forEach(button => button.addEventListener('click', dismissInstallPrompt));
+
+  window.setTimeout(() => {
+    const dismissedAt = Number(localStorage.getItem(INSTALL_PROMPT_KEY) || 0);
+    const modalAlreadyOpen = document.querySelector('.modal-overlay:not(.hidden)');
+    const snoozed = Date.now() - dismissedAt < INSTALL_PROMPT_SNOOZE_MS;
+    if (!isAppInstalled() && !snoozed && !modalAlreadyOpen) {
+      document.getElementById('modal-install')?.classList.remove('hidden');
+    }
+  }, INSTALL_PROMPT_DELAY_MS);
 }
 
 function initModalClose() {
@@ -1921,8 +1950,7 @@ function initSyncModal() {
   const btnPush = document.getElementById('btn-sync-push');
   const btnToggleSound = document.getElementById('btn-toggle-sound');
   const volumeControl = document.getElementById('sound-volume');
-  const btnEnablePush = document.getElementById('btn-enable-push');
-  const btnDisablePush = document.getElementById('btn-disable-push');
+  const pushToggle = document.getElementById('push-toggle');
 
   if (btnToggleSound) {
     btnToggleSound.addEventListener('click', toggleSound);
@@ -1933,8 +1961,12 @@ function initSyncModal() {
     updateVolumeControl();
   }
 
-  if (btnEnablePush) btnEnablePush.addEventListener('click', enablePushNotifications);
-  if (btnDisablePush) btnDisablePush.addEventListener('click', disablePushNotifications);
+  if (pushToggle) {
+    pushToggle.addEventListener('change', () => {
+      if (pushToggle.checked) enablePushNotifications();
+      else disablePushNotifications();
+    });
+  }
 
   if (btnOpenModal) {
     btnOpenModal.addEventListener('click', openSyncModal);
@@ -2020,7 +2052,7 @@ function seedDemoData() {
 function registerSW() {
   if ('serviceWorker' in navigator) {
     return navigator.serviceWorker
-      .register('sw.js?v=4.14', { updateViaCache: 'none' })
+      .register('sw.js?v=4.15', { updateViaCache: 'none' })
       .catch(e => {
         console.warn('SW', e);
         return null;
@@ -2057,6 +2089,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initTournamentModal();
   initEloInfoModal();
   initSyncModal();
+  initInstallPrompt();
   initAutoSyncPolling();
 
   renderRanking();
