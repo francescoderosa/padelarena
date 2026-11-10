@@ -84,6 +84,21 @@ Dopo aver configurato il binding D1 e la variabile, esegui un nuovo deploy. Se i
 
 La Function viene pubblicata insieme al sito: `functions/api/sync.js` diventa l'endpoint `/api/sync`. Non è necessario creare o gestire un Worker separato.
 
+### Import iniziale da JSONBin
+
+Lo script `scripts/import-jsonbin-to-d1.mjs` esegue un import una tantum del bin JSONBin verso l'endpoint D1. Di default esegue solo un dry-run; la scrittura richiede esplicitamente `--apply`.
+
+Esempio per dev:
+
+```bash
+JSONBIN_BIN_ID='bin-dev' \\
+JSONBIN_API_KEY='la-chiave-jsonbin' \\
+npm run import:jsonbin -- \\
+  --target https://controvetro.dev.padelmate.it/api/sync
+```
+
+Dopo aver verificato i conteggi del dry-run, ripetere il comando con `--apply`. Eseguire separatamente l'import production usando il bin production e il target `https://controvetro.padelmate.it/api/sync`. Lo script rifiuta per default uno stato completamente vuoto per evitare sovrascritture accidentali.
+
 ### Configurazione Web Push e D1
 
 Le notifiche push e lo stato applicativo usano lo stesso database D1, in tabelle separate. Per creare e collegare il database:
