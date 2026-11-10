@@ -1007,7 +1007,7 @@ function bindPlayerDetailEvents(container) {
 
 // ── MATCHES / BATTLES ────────────────────────────────────────────────────────
 function renderMatches() {
-  const ongoing = state.matches.filter(m => m.status === 'ongoing');
+  const ongoing = state.matches.filter(m => m.status === 'ongoing' && !m.tournamentId);
   const completed = state.matches.filter(m => m.status === 'completed' && !m.tournamentId)
     .sort((a, b) => new Date(b.date) - new Date(a.date));
 
@@ -1294,8 +1294,8 @@ function saveResult() {
     }
   }
 
-  m.scoreA = status === 'completed' ? scoreA : null;
-  m.scoreB = status === 'completed' ? scoreB : null;
+  m.scoreA = scoreA;
+  m.scoreB = scoreB;
   m.status = status;
 
   if (m.tournamentId) {
@@ -1641,6 +1641,29 @@ function deleteTournament(id) {
   showToast('Serata rimossa');
 }
 
+function groupTournamentMatchups(t) {
+  const rounds = [];
+  const legs = [...new Set(t.matchups.map(mu => mu.leg))].sort((a, b) => a - b);
+
+  legs.forEach(leg => {
+    let pending = t.matchups.filter(mu => mu.leg === leg);
+    while (pending.length) {
+      const round = [];
+      const usedCouples = new Set();
+      pending = pending.filter(mu => {
+        if (usedCouples.has(mu.cA) || usedCouples.has(mu.cB)) return true;
+        usedCouples.add(mu.cA);
+        usedCouples.add(mu.cB);
+        round.push(mu);
+        return false;
+      });
+      rounds.push(round);
+    }
+  });
+
+  return rounds;
+}
+
 function openTournamentDetail(tid) {
   const t = state.tournaments.find(x => x.id === tid);
   if (!t) return;
@@ -1666,7 +1689,7 @@ function openTournamentDetail(tid) {
     </tr>`;
   }).join('');
 
-  const matchups = t.matchups.map(mu => {
+  const renderMatchup = mu => {
     const cA = t.couples[mu.cA];
     const cB = t.couples[mu.cB];
     const nameA = coupleNamesMarkup(cA);
@@ -1684,7 +1707,7 @@ function openTournamentDetail(tid) {
       ? '<span class="match-expired-note">SCADUTA</span>'
       : isDone
         ? `<button class="btn-icon btn-icon-edit" data-tourn-matchup="${tid}__${mu.id}" title="Modifica">✏️</button>`
-        : `<button class="btn-icon btn-icon-score" data-tourn-matchup="${tid}__${mu.id}" title="Registra">⚡ RISULTATO</button>`;
+        : `<button class="btn-icon btn-icon-score" data-tourn-matchup="${tid}__${mu.id}" title="Registra">LIVE</button>`;
 
     return `
       <div class="matchup-row ${isDone ? 'done' : ''} ${expired ? 'expired' : ''}">
@@ -1693,7 +1716,16 @@ function openTournamentDetail(tid) {
         <div class="matchup-couple">${nameB}</div>
         <div class="matchup-action">${actionBtn}</div>
       </div>`;
-  }).join('');
+  };
+
+  const matchups = groupTournamentMatchups(t).map((round, index) => `
+    <section class="matchup-round">
+      <div class="matchup-round-header">
+        <span>⚡ TURNO ${index + 1}</span>
+        <small>${round.length} PARTITE CONTEMPORANEE</small>
+      </div>
+      <div class="matchup-grid">${round.map(renderMatchup).join('')}</div>
+    </section>`).join('');
 
   const eloCalculationRows = eloCalculations.length
     ? eloCalculations.map(({ matchup, scoreA, scoreB, actualA, actualB, expectedA, expectedB, winBonus, deltaA, deltaB }) => {
@@ -1722,7 +1754,7 @@ function openTournamentDetail(tid) {
     </div>
      <div style="margin-top:20px">
        <div class="badge-header">CALENDARIO MATCHUP</div>
-       <div class="matchup-grid">${matchups}</div>
+        <div class="matchup-rounds">${matchups}</div>
       </div>
       <div class="elo-calculation elo-calculation-tournament">
         <div class="match-detail-section-title">Come viene calcolato l'ELO della serata</div>
@@ -1778,8 +1810,8 @@ function openMatchupResultModal(tid, muId) {
   document.getElementById('result-set-inputs').classList.toggle('hidden', isGames);
   document.getElementById('result-score-hint').textContent = isGames ? 'Games vinti da ogni squadra' : 'Set vinti da ogni squadra';
   if (isGames) {
-    document.getElementById('result-scoreA').value = mu.scoreA ?? 0;
-    document.getElementById('result-scoreB').value = mu.scoreB ?? 0;
+    document.getElementById('result-scoreA').value = m.scoreA ?? mu.scoreA ?? 0;
+    document.getElementById('result-scoreB').value = m.scoreB ?? mu.scoreB ?? 0;
   } else renderSetInputs('result-set-inputs', m.sets || []);
 
   document.getElementById('result-teams-preview').innerHTML = `${teamPreviewMarkup(m.teamA, 'result-team-a')}
@@ -2067,10 +2099,13 @@ function initEnvironmentBanner() {
   if (!banner || !label) return;
 
   const isDev = APP_ENV === 'dev';
-  banner.classList.add(isDev ? 'environment-banner-dev' : 'environment-banner-prd');
-  label.textContent = isDev
-    ? 'AMBIENTE DEV · dati e sincronizzazione separati dalla produzione'
-    : 'AMBIENTE PRD · produzione';
+  if (!isDev) {
+    banner.hidden = true;
+    return;
+  }
+
+  banner.classList.add('environment-banner-dev');
+  label.textContent = 'AMBIENTE DEV · dati e sincronizzazione separati dalla produzione';
   banner.hidden = false;
 }
 
