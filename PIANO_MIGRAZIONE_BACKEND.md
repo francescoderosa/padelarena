@@ -25,9 +25,11 @@ Documento operativo da aggiornare durante l'evoluzione del progetto.
 - [x] Correggere la visualizzazione delle partite torneo nell'area Battaglie.
 - [x] Raggruppare i matchup torneo per turni.
 - [x] Persistenza e riapertura dei risultati parziali.
-- [ ] Creare il branch della migrazione JSONBin -> D1.
-- [ ] Sostituire JSONBin con una riga D1 mantenendo `/api/sync`.
+- [x] Creare il branch della migrazione JSONBin -> D1.
+- [x] Sostituire JSONBin con una riga D1 mantenendo `/api/sync`.
 - [ ] Importare e verificare lo stato esistente.
+- [x] Applicare la migrazione `0002_club_state.sql` al database remoto.
+- [ ] Configurare `CLUB_STATE_ID` nei due ambienti Pages e verificare il deploy.
 - [ ] Separare la persistenza dal codice UI.
 - [ ] Definire il contratto Club Service con `clubId`.
 - [ ] Definire il contratto Account Service / Club Service.
@@ -169,3 +171,11 @@ D1 con stato JSON
         -> Club Service tabellare
         -> integrazione account, membership e ruoli
 ```
+
+## Punto di ripresa
+
+- Migrazione D1 remota completata.
+- `CLUB_STATE_ID` non ancora configurato nei progetti Pages.
+- Valori previsti: `controvetro` in produzione e `controvetro-dev` in dev.
+- Import dello stato attuale da JSONBin ancora da eseguire.
+- Prossimo passo: configurare le variabili, fare deploy e verificare `GET/PUT /api/sync` nei due ambienti.

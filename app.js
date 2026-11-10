@@ -8,7 +8,7 @@
      • Power Level Bar & XP stats
      • Matches with VS fighting divider & LED scoreboards
      • Round-Robin Tournament Arena with Live standings
-     • Real-time Multi-device JSONBin.io Cloud Sync
+     • Real-time Multi-device D1 Cloud Sync
    ============================================================ */
 'use strict';
 

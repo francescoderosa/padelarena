@@ -7,7 +7,7 @@ PWA moderna per gestire partite di padel, serate a torneo e classifica ELO condi
 - 🏆 **Classifica ELO Globale** – Ranking dinamico basato sui risultati delle partite (pesi su compagno e avversari)
 - ⚽ **Partite Flessibili** – Punteggio a **Set** o a **Games**, con gestione di **partite simultanee in corso**
 - 🎯 **Modalità Serate / Tornei** – Calendario round-robin a 6 partite (es. 3 coppie × 2 gironi o 4 coppie), classifica interna della serata e aggiornamento automatico dell'ELO generale
-- ☁️ **Sincronizzazione Multi-dispositivo (JSONBin.io)** – Condivisione automatica in cloud tramite proxy Cloudflare, senza chiavi nel client
+- ☁️ **Sincronizzazione Multi-dispositivo (Cloudflare D1)** – Condivisione automatica in cloud tramite Pages Function, senza chiavi nel client
 - 👥 **Gestione Giocatori** – Aggiungi, modifica ed elimina giocatori con avatar emoji
 - 💾 **Offline-first & Installabile** – Funziona anche senza connessione grazie a localStorage e Service Worker PWA
 
@@ -52,7 +52,7 @@ Il primo avvio di `rembg` può scaricare il modello di rimozione dello sfondo.
 
 ## ☁️ Sincronizzazione Multi-dispositivo
 
-La sincronizzazione condivisa usa **JSONBin.io** tramite una **Cloudflare Pages Function** (`/api/sync`). Il frontend non contiene credenziali e la modale Cloud Sync gestisce solo la preferenza di auto-sync.
+La sincronizzazione condivisa usa **Cloudflare D1** tramite una **Cloudflare Pages Function** (`/api/sync`). Il frontend non contiene credenziali e la modale Cloud Sync gestisce solo la preferenza di auto-sync.
 
 ### Come funziona oggi
 
@@ -60,22 +60,17 @@ La sincronizzazione condivisa usa **JSONBin.io** tramite una **Cloudflare Pages 
 2. Quando l'auto-sync è attivo, ogni modifica programma un invio al cloud dopo un breve ritardo, evitando richieste ripetute durante la stessa operazione.
 3. All'avvio e ogni 25 secondi, quando la pagina è visibile, l'app chiede gli ultimi dati a `/api/sync`.
 4. Il pulsante `🔄 Sync` esegue una lettura manuale; `Scarica dal Cloud` forza la sostituzione dei dati locali con quelli cloud, mentre `Invia al Cloud` pubblica lo stato locale.
-5. La Function riceve le richieste dal browser, aggiunge server-side l'`X-Access-Key` e inoltra GET/PUT alle API JSONBin. La risposta non viene memorizzata dal Service Worker.
+5. La Function riceve le richieste dal browser e legge/scrive lo stato in D1. La risposta non viene memorizzata dal Service Worker.
 
-Il browser conosce soltanto l'endpoint relativo `/api/sync`: non vede né `JSONBIN_BIN_ID` né `JSONBIN_API_KEY`. Disattivare l'auto-sync interrompe gli invii e il polling automatici, ma non disabilita le azioni manuali.
+Il browser conosce soltanto l'endpoint relativo `/api/sync`: non vede credenziali D1. Disattivare l'auto-sync interrompe gli invii e il polling automatici, ma non disabilita le azioni manuali.
 
 ### Configurazione Cloudflare
-Nel progetto Cloudflare Pages vai su **Settings → Environment variables** e aggiungi come secret nell'ambiente corretto:
-- `JSONBIN_BIN_ID`: ID del Bin JSONBin condiviso.
-- `JSONBIN_API_KEY`: Access Key JSONBin.
+Nel progetto Cloudflare Pages vai su **Settings → Environment variables** e configura nell'ambiente corretto:
+- `CLUB_STATE_ID`: identificativo tecnico dello stato persistito in D1. Usa valori diversi per dev e produzione.
 
-Il progetto production usa il bin production; il progetto dev (`controvetro.dev.padelmate.it`) usa un bin e una chiave distinti. Il nome dell'ambiente mostrato nell'interfaccia viene determinato dal dominio, senza esporre i secret al browser.
+Il progetto production e il progetto dev (`controvetro.dev.padelmate.it`) devono usare `CLUB_STATE_ID` distinti. Se la variabile non è configurata, la Function usa l'hostname della richiesta come identificativo, evitando collisioni tra ambienti ma rendendo l'hostname parte del dato tecnico.
 
-Dopo aver salvato i secret, esegui un nuovo deploy. La Function server-side inoltra le richieste a JSONBin senza esporre la chiave al browser. Se i secret mancano, l'endpoint restituisce un errore di configurazione e l'app resta disponibile con i dati locali.
-
-Il workflow GitHub `JSONBin Production Backup` esegue il backup del solo bin production usando i secret GitHub `JSONBIN_BIN_ID` e `JSONBIN_API_KEY`. Questi secret devono quindi puntare esclusivamente alla produzione.
-
-Per sicurezza, revoca e sostituisci la vecchia Access Key, perché una versione storica del repository la conteneva. I secret di Cloudflare non devono essere inseriti in `app.js`, nel manifest, nel Service Worker o in qualsiasi file statico pubblicato.
+Dopo aver configurato il binding D1 e la variabile, esegui un nuovo deploy. Se il binding manca, l'endpoint restituisce un errore di configurazione e l'app resta disponibile con i dati locali.
 
 ---
 
@@ -84,14 +79,42 @@ Per sicurezza, revoca e sostituisci la vecchia Access Key, perché una versione 
 1. Collega il repository GitHub al progetto Cloudflare Pages.
 2. Imposta il branch di produzione su `master` e la directory di output su `/`.
 3. Non serve un comando di build: il progetto è una PWA statica e la cartella `functions/` viene rilevata automaticamente da Cloudflare Pages.
-4. Configura i secret JSONBin descritti sopra nel dashboard Cloudflare.
+4. Configura il binding D1 `PUSH_DB` e `CLUB_STATE_ID` nel dashboard Cloudflare.
 5. Esegui un nuovo deploy e verifica l'app dal dominio Pages o dal dominio personalizzato.
 
 La Function viene pubblicata insieme al sito: `functions/api/sync.js` diventa l'endpoint `/api/sync`. Non è necessario creare o gestire un Worker separato.
 
+### Import iniziale da JSONBin
+
+Lo script `scripts/import-jsonbin-to-d1.mjs` esegue un import una tantum del bin JSONBin verso l'endpoint D1. Di default esegue solo un dry-run; la scrittura richiede esplicitamente `--apply`.
+
+Esempio per dev:
+
+```bash
+JSONBIN_BIN_ID='bin-dev' \\
+JSONBIN_API_KEY='la-chiave-jsonbin' \\
+npm run import:jsonbin -- \\
+  --target https://controvetro.dev.padelmate.it/api/sync
+```
+
+Dopo aver verificato i conteggi del dry-run, ripetere il comando con `--apply`. Eseguire separatamente l'import production usando il bin production e il target `https://controvetro.padelmate.it/api/sync`. Lo script rifiuta per default uno stato completamente vuoto per evitare sovrascritture accidentali.
+
+Se Node locale segnala un errore TLS come `unable to get local issuer certificate`, esportare prima il bin con `curl` e usare `--source-file`:
+
+```bash
+curl --fail --silent --show-error \\
+  -H "X-Access-Key: $JSONBIN_API_KEY" \\
+  "https://api.jsonbin.io/v3/b/$JSONBIN_BIN_ID/latest" \\
+  -o /tmp/controvetro-jsonbin-dev.json
+
+npm run import:jsonbin -- \\
+  --source-file /tmp/controvetro-jsonbin-dev.json \\
+  --target http://localhost:8789/api/sync
+```
+
 ### Configurazione Web Push e D1
 
-Le notifiche push usano D1 soltanto per le subscription dei dispositivi. I dati applicativi continuano a usare JSONBin. Per creare e collegare il database:
+Le notifiche push e lo stato applicativo usano lo stesso database D1, in tabelle separate. Per creare e collegare il database:
 
 ```bash
 npx wrangler d1 create controvetro-push
@@ -115,7 +138,7 @@ npx wrangler pages secret put PUSH_ADMIN_SECRET
 
 `VAPID_PRIVATE_KEY` e `PUSH_ADMIN_SECRET` non devono mai essere pubblicati. `VAPID_PUBLIC_KEY` viene restituita dal solo endpoint server `/api/push/public-key` e usata dal browser per creare la subscription. L'endpoint amministrativo `/api/push/send` richiede l'header `X-Admin-Secret` e non viene chiamato dalla PWA.
 
-La migrazione SQL si trova in `migrations/0001_push_subscriptions.sql`. In locale si può usare un database D1 locale con `wrangler pages dev .`; se il binding non è disponibile, l'app resta utilizzabile e la sezione notifiche segnala la configurazione mancante.
+Le migrazioni SQL si trovano in `migrations/`. Oltre a `0001_push_subscriptions.sql`, `0002_club_state.sql` crea la tabella dello stato applicativo. In locale si può usare un database D1 locale con `wrangler pages dev .`; se il binding non è disponibile, l'app resta utilizzabile e la sincronizzazione segnala la configurazione mancante.
 
 ## LOGS
 
@@ -237,7 +260,7 @@ Il flusso server-side è il seguente:
 5. La Function legge da D1 le subscription abilitate e usa `VAPID_PRIVATE_KEY` e `VAPID_SUBJECT` per inviare il batch tramite `@mmmike/web-push`.
 6. Gli endpoint non più validi vengono rimossi da D1; il risultato riporta consegnate, rimosse e fallite.
 
-Cloudflare gestisce l'esecuzione edge delle Function, il binding verso D1 e la protezione dei secret configurati nell'ambiente Pages. D1 contiene solo le destinazioni push e i metadati tecnici minimi: non contiene il ranking, le partite o i tornei, che continuano a essere sincronizzati tramite JSONBin.
+Cloudflare gestisce l'esecuzione edge delle Function, il binding verso D1 e la protezione dei secret configurati nell'ambiente Pages. D1 contiene le destinazioni push e lo stato applicativo condiviso in tabelle separate.
 
 ### Implementazione nel progetto
 
@@ -260,7 +283,7 @@ La funzionalità attuale è volutamente generica: consente di iscrivere un dispo
 Wrangler è già installato nel progetto. Per avviare anche la Function `/api/sync`:
 
 1. Copia `.env.example` in `.env`.
-2. Inserisci in `.env` gli stessi valori di `JSONBIN_BIN_ID` e `JSONBIN_API_KEY` configurati su Cloudflare.
+2. Inserisci in `.env` un `CLUB_STATE_ID` coerente con l'ambiente locale.
 3. Avvia il server con `wrangler pages dev .`.
 4. Apri `http://localhost:8788`.
 
