@@ -72,12 +72,17 @@ async function readResponseBody(response) {
 }
 
 async function fetchJsonBin(binId, apiKey) {
-  const response = await fetch(`${JSONBIN_API_URL}/${encodeURIComponent(binId)}/latest`, {
-    headers: {
-      Accept: 'application/json',
-      'X-Access-Key': apiKey,
-    },
-  });
+  let response;
+  try {
+    response = await fetch(`${JSONBIN_API_URL}/${encodeURIComponent(binId)}/latest`, {
+      headers: {
+        Accept: 'application/json',
+        'X-Access-Key': apiKey,
+      },
+    });
+  } catch (error) {
+    throw new Error(`Connessione JSONBin fallita: ${error.cause?.message || error.message}`);
+  }
   const body = await readResponseBody(response);
 
   if (!response.ok) {
@@ -88,11 +93,16 @@ async function fetchJsonBin(binId, apiKey) {
 }
 
 async function writeD1(targetUrl, state) {
-  const response = await fetch(targetUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(state),
-  });
+  let response;
+  try {
+    response = await fetch(targetUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state),
+    });
+  } catch (error) {
+    throw new Error(`Connessione endpoint D1 fallita: ${error.cause?.message || error.message}`);
+  }
   const body = await readResponseBody(response);
 
   if (!response.ok) {
