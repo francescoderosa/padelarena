@@ -2,6 +2,9 @@
   "name": "controvetro-pro-league",
   "private": true,
   "type": "module",
+  "scripts": {
+    "import:jsonbin": "node scripts/import-jsonbin-to-d1.mjs"
+  },
   "dependencies": {
     "@mmmike/web-push": "^1.5.0"
   }
