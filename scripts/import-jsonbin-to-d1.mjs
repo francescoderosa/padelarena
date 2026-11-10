@@ -1,3 +1,5 @@
+import { readFile } from 'node:fs/promises';
+
 const JSONBIN_API_URL = 'https://api.jsonbin.io/v3/b';
 
 function printUsage() {
@@ -8,6 +10,7 @@ function printUsage() {
 Opzioni:
   --bin-id <id>       ID del bin JSONBin (oppure JSONBIN_BIN_ID)
   --api-key <key>     Access key JSONBin (oppure JSONBIN_API_KEY)
+  --source-file <file> File JSONBin gia' esportato con curl
   --target <url>      Endpoint completo D1, incluso /api/sync
   --apply             Scrive su D1; senza questa opzione esegue solo il dry-run
   --allow-empty       Consente di importare uno stato completamente vuoto
@@ -26,12 +29,12 @@ function parseArguments(args) {
       options.allowEmpty = true;
     } else if (argument === '--help') {
       options.help = true;
-    } else if (['--bin-id', '--api-key', '--target'].includes(argument)) {
+    } else if (['--bin-id', '--api-key', '--source-file', '--target'].includes(argument)) {
       const value = args[index + 1];
       if (!value || value.startsWith('--')) {
         throw new Error(`Valore mancante per ${argument}`);
       }
-      options[argument.slice(2).replace('-', '')] = value;
+      options[argument.slice(2).replaceAll('-', '')] = value;
       index += 1;
     } else {
       throw new Error(`Argomento non riconosciuto: ${argument}`);
@@ -92,6 +95,22 @@ async function fetchJsonBin(binId, apiKey) {
   return body?.record ?? body;
 }
 
+async function readJsonBinFile(filePath) {
+  let content;
+  try {
+    content = await readFile(filePath, 'utf8');
+  } catch (error) {
+    throw new Error(`Lettura file JSONBin fallita: ${error.message}`);
+  }
+
+  try {
+    const body = JSON.parse(content);
+    return body?.record ?? body;
+  } catch (error) {
+    throw new Error(`JSON non valido nel file JSONBin: ${error.message}`);
+  }
+}
+
 async function writeD1(targetUrl, state) {
   let response;
   try {
@@ -121,10 +140,11 @@ async function main() {
 
   const binId = options.binid || process.env.JSONBIN_BIN_ID;
   const apiKey = options.apikey || process.env.JSONBIN_API_KEY;
+  const sourceFile = options.sourcefile || process.env.JSONBIN_EXPORT_FILE;
   const targetUrl = options.target || process.env.D1_SYNC_URL;
 
-  if (!binId) throw new Error('Specificare --bin-id o JSONBIN_BIN_ID');
-  if (!apiKey) throw new Error('Specificare --api-key o JSONBIN_API_KEY');
+  if (!sourceFile && !binId) throw new Error('Specificare --bin-id, JSONBIN_BIN_ID o --source-file');
+  if (!sourceFile && !apiKey) throw new Error('Specificare --api-key o JSONBIN_API_KEY');
   if (!targetUrl) throw new Error('Specificare --target o D1_SYNC_URL');
 
   const target = new URL(targetUrl);
@@ -132,10 +152,12 @@ async function main() {
     throw new Error('L\'endpoint D1 deve usare HTTPS, salvo localhost');
   }
 
-  const record = await fetchJsonBin(binId, apiKey);
+  const record = sourceFile
+    ? await readJsonBinFile(sourceFile)
+    : await fetchJsonBin(binId, apiKey);
   const { state, isEmpty } = getState(record);
 
-  console.log(`Sorgente JSONBin: ${binId}`);
+  console.log(`Sorgente JSONBin: ${sourceFile || binId}`);
   console.log(`Destinazione D1: ${target.href}`);
   console.log(`Players: ${state.players.length}`);
   console.log(`Matches: ${state.matches.length}`);

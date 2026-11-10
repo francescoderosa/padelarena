@@ -99,6 +99,19 @@ npm run import:jsonbin -- \\
 
 Dopo aver verificato i conteggi del dry-run, ripetere il comando con `--apply`. Eseguire separatamente l'import production usando il bin production e il target `https://controvetro.padelmate.it/api/sync`. Lo script rifiuta per default uno stato completamente vuoto per evitare sovrascritture accidentali.
 
+Se Node locale segnala un errore TLS come `unable to get local issuer certificate`, esportare prima il bin con `curl` e usare `--source-file`:
+
+```bash
+curl --fail --silent --show-error \\
+  -H "X-Access-Key: $JSONBIN_API_KEY" \\
+  "https://api.jsonbin.io/v3/b/$JSONBIN_BIN_ID/latest" \\
+  -o /tmp/controvetro-jsonbin-dev.json
+
+npm run import:jsonbin -- \\
+  --source-file /tmp/controvetro-jsonbin-dev.json \\
+  --target http://localhost:8789/api/sync
+```
+
 ### Configurazione Web Push e D1
 
 Le notifiche push e lo stato applicativo usano lo stesso database D1, in tabelle separate. Per creare e collegare il database:
