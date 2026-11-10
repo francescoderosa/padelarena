@@ -25,7 +25,7 @@ Documento operativo da aggiornare durante l'evoluzione del progetto.
 - [x] Correggere la visualizzazione delle partite torneo nell'area Battaglie.
 - [x] Raggruppare i matchup torneo per turni.
 - [x] Persistenza e riapertura dei risultati parziali.
-- [ ] Creare il branch della migrazione JSONBin -> D1.
+- [x] Creare il branch della migrazione JSONBin -> D1.
 - [ ] Sostituire JSONBin con una riga D1 mantenendo `/api/sync`.
 - [ ] Importare e verificare lo stato esistente.
 - [ ] Separare la persistenza dal codice UI.
