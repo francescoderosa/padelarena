@@ -13,6 +13,72 @@ PWA moderna per gestire partite di padel, serate a torneo e classifica ELO condi
 
 ---
 
+## ⚡ Calcolo ELO delle serate torneo
+
+Per ogni matchup completato, l'app calcola la variazione ELO confrontando la forza media delle due coppie con il risultato ottenuto.
+
+### 1. ELO medio delle coppie
+
+L'ELO di ogni coppia è la media degli ELO dei due giocatori:
+
+```text
+ELO coppia A = (ELO giocatore A1 + ELO giocatore A2) / 2
+ELO coppia B = (ELO giocatore B1 + ELO giocatore B2) / 2
+```
+
+### 2. Risultato atteso
+
+La probabilità attesa viene calcolata con la formula ELO standard, usando una scala di 400 punti:
+
+```text
+attesa A = 1 / (1 + 10 ^ ((ELO B - ELO A) / 400))
+attesa B = 1 - attesa A
+```
+
+Per esempio, con una coppia A a 1040 ELO e una coppia B a 960 ELO, l'aspettativa è circa 61% per A e 39% per B.
+
+### 3. Risultato effettivo e margine
+
+Il risultato effettivo usa il punteggio del matchup. Con un risultato 6-3:
+
+```text
+risultato A = 6 / (6 + 3) = 66,7%
+risultato B = 3 / (6 + 3) = 33,3%
+```
+
+Viene inoltre applicato un piccolo bonus proporzionale al margine:
+
+```text
+margine = |punti A - punti B| / totale × 0,15
+```
+
+Per 6-3 il margine è `3 / 9 × 0,15 = 0,05`. Il bonus viene applicato alla squadra vincente e sottratto alla perdente.
+
+### 4. Variazione finale
+
+Il fattore K è `32`:
+
+```text
+delta A = 32 × (risultato effettivo A - attesa A + bonus margine)
+delta B = 32 × (risultato effettivo B - attesa B - bonus margine)
+```
+
+Il valore viene arrotondato all'intero più vicino. Ogni giocatore della stessa coppia riceve lo stesso delta ELO; il delta mostrato nella classifica della serata è quindi la variazione del singolo giocatore, non la somma dei due componenti della coppia.
+
+### Ricostruzione degli ELO
+
+Per calcolare il dettaglio ELO di una serata, l'app parte da `1000` per ogni giocatore e rigioca in ordine cronologico tutte le partite completate. In questo modo le stime pre-partita tengono conto dei risultati precedenti e non dipendono soltanto dall'ordine con cui si apre la schermata.
+
+Il dettaglio della serata mostra per ogni matchup:
+
+- ELO medi pre-partita delle due coppie;
+- percentuale attesa per ciascuna coppia;
+- risultato effettivo derivato dal punteggio;
+- bonus del margine;
+- variazione ELO finale.
+
+---
+
 ## 🖼️ Rimozione dello sfondo dalle immagini
 
 Per rimuovere lo sfondo con `rembg` ed esportare un PNG trasparente:
