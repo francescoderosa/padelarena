@@ -108,7 +108,7 @@
       <section id="page-players" class="page">
         <div class="page-header">
           <div>
-            <div class="badge-header">HERO ROSTER</div>
+            <div class="badge-header">PLAYER ROSTER</div>
             <h2>👥 Giocatori & Tier</h2>
           </div>
           <button class="btn btn-primary btn-arcade" id="btn-add-player">
@@ -248,7 +248,10 @@
           <div id="tourn-couples-builder"></div>
           <div class="couple-actions">
             <button class="btn btn-secondary" id="btn-suggest-couples">✨ Suggerisci coppie</button>
+            <button class="btn btn-secondary hidden" id="btn-refine-couples">🔄 Riformula</button>
             <span class="score-hint">4 coppie · 8 giocatori · 6 sfide</span>
+            <span class="score-hint" id="tourn-balance-rating"
+              title="Quanto gli ELO medi delle coppie sono vicini tra loro">Bilanciamento: —</span>
           </div>
         </div>
         <p id="tourn-matchup-preview" class="score-hint"></p>
@@ -303,7 +306,7 @@
   <div id="modal-player" class="modal-overlay hidden">
     <div class="modal modal-sm">
       <div class="modal-header">
-        <h3 id="modal-player-title">👤 Nuovo Eroe</h3>
+        <h3 id="modal-player-title">👤 Nuovo Giocatore</h3>
         <button class="modal-close" data-close="modal-player">✕</button>
       </div>
       <div class="modal-body">
@@ -432,6 +435,15 @@
           <p>Il valore viene arrotondato all'intero più vicino. Il rating parte da <strong>1000</strong> e viene
             ricalcolato in ordine cronologico sulle sole partite completate.</p>
         </div>
+        <div class="elo-info-highlight">
+          <strong>Cosa significa Tier?</strong>
+          <p>Il tier è la fascia di livello determinata dall'ELO corrente del giocatore: <strong>Bronze</strong> sotto
+            970,
+            <strong>Silver</strong> da 970 a 1029, <strong>Gold</strong> da 1030 a 1099 e <strong>Diamond</strong> da
+            1100 in su.
+            Non è un'etichetta assegnata manualmente: cambia quando cambia l'ELO.
+          </p>
+        </div>
         <p class="elo-info-footnote">Nei dettagli di ogni partita e di ogni serata sono mostrati i fattori che hanno
           prodotto la variazione visualizzata. Un risultato deve essere inserito entro 7 giorni dalla data della
           partita; dopo la scadenza la sfida non contribuisce all'ELO.</p>
@@ -532,7 +544,8 @@
         <button class="modal-close" data-dismiss-install aria-label="Chiudi">✕</button>
       </div>
       <div class="modal-body install-guide">
-        <p class="install-guide-intro">Installa l'app sul telefono per aprirla rapidamente e ricevere le notifiche del club.</p>
+        <p class="install-guide-intro">Installa l'app sul telefono per aprirla rapidamente e ricevere le notifiche del
+          club.</p>
         <div class="install-platform-card">
           <h4>🍎 iPhone e iPad</h4>
           <ol>
@@ -551,7 +564,8 @@
             <li>Conferma l'installazione.</li>
           </ol>
         </div>
-        <p class="install-guide-note">Dopo l'installazione riapri l'app dalla schermata Home: così funzionerà come un'app nativa.</p>
+        <p class="install-guide-note">Dopo l'installazione riapri l'app dalla schermata Home: così funzionerà come
+          un'app nativa.</p>
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary btn-arcade" data-dismiss-install>Ho capito</button>

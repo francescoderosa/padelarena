@@ -976,9 +976,9 @@ function renderRanking() {
             <div class="rank-power-bar" style="width:${powerPct}%"></div>
           </div>
           <div class="rank-stats">
-            <span class="rank-stat">BATTLES: <strong>${s.played || 0}</strong></span>
-            <span class="rank-stat">VICTORIES: <span class="stat-highlight">${s.wins || 0}W</span></span>
-            <span class="rank-stat">DEFEATS: <span>${s.losses || 0}L</span></span>
+            <span class="rank-stat">PARTITE: <strong>${s.played || 0}</strong></span>
+            <span class="rank-stat">VITTORIE: <span class="stat-highlight">${s.wins || 0}</span></span>
+            <span class="rank-stat">SCONFITTE: <span>${s.losses || 0}</span></span>
             <span class="rank-stat">WINRATE: <span class="stat-highlight">${wr}%</span></span>
           </div>
         </div>
@@ -1428,7 +1428,7 @@ const setEmojiSel = emoji =>
   document.querySelectorAll('.emoji-option').forEach(o => o.classList.toggle('selected', o.dataset.emoji === emoji));
 
 function openAddPlayer() {
-  document.getElementById('modal-player-title').textContent = '👤 Nuovo Eroe';
+  document.getElementById('modal-player-title').textContent = '👤 Nuovo Giocatore';
   document.getElementById('edit-player-id').value = '';
   document.getElementById('player-name').value = '';
   setEmojiSel(EMOJIS[0]);
@@ -1437,7 +1437,7 @@ function openAddPlayer() {
 
 function openEditPlayer(id) {
   const p = state.players.find(x => x.id === id); if (!p) return;
-  document.getElementById('modal-player-title').textContent = '👤 Modifica Eroe';
+  document.getElementById('modal-player-title').textContent = '👤 Modifica Giocatore';
   document.getElementById('edit-player-id').value = p.id;
   document.getElementById('player-name').value = p.name;
   setEmojiSel(p.emoji || EMOJIS[0]);
@@ -1459,7 +1459,7 @@ function savePlayer() {
   playSfx('click');
   closeModal('modal-player');
   renderPlayers();
-  showToast(eid ? '✅ Eroe aggiornato' : '⚡ Nuovo eroe nel roster!');
+  showToast(eid ? '✅ Giocatore aggiornato' : '⚡ Nuovo giocatore nel roster!');
 }
 
 function deletePlayer(id) {
@@ -1824,11 +1824,20 @@ function openMatchupResultModal(tid, muId) {
 // ── TOURNAMENT MODAL BUILDER ─────────────────────────────────────────────────
 let tournCoupleCount = 4;
 let selectedTournamentPlayerIds = [];
+let suggestedCoupleVariant = 0;
+
+const SUGGESTED_COUPLE_VARIANTS = [
+  [[0, 7], [1, 6], [2, 5], [3, 4]],
+  [[7, 3], [5, 1], [6, 0], [4, 2]],
+  [[2, 7], [4, 0], [6, 3], [1, 5]],
+  [[5, 0], [7, 2], [1, 4], [3, 6]],
+];
 
 function initTournamentModal() {
   document.getElementById('btn-new-tournament').addEventListener('click', openNewTournamentModal);
   document.getElementById('btn-save-tournament').addEventListener('click', saveTournament);
   document.getElementById('btn-suggest-couples').addEventListener('click', suggestCouples);
+  document.getElementById('btn-refine-couples').addEventListener('click', reformulateCouples);
   document.getElementById('btn-confirm-player-selection').addEventListener('click', confirmPlayerSelection);
 
   initToggle('tourn-type-toggle', () => { });
@@ -1840,6 +1849,8 @@ function openNewTournamentModal() {
   document.getElementById('tourn-date').value = todayStr();
   setToggleVal('tourn-type-toggle', 'games');
   selectedTournamentPlayerIds = [];
+  suggestedCoupleVariant = 0;
+  updateCoupleSuggestionActions(false);
   tournCoupleCount = 4;
   rebuildCouplesUI();
   updateMatchupPreview();
@@ -1864,6 +1875,7 @@ function addCoupleRowAt(idx) {
     <select class="couple-p2"><option value="">— Player 2 —</option>${opts}</select>
     <span></span>`;
   builder.appendChild(div);
+  div.querySelectorAll('select').forEach(select => select.addEventListener('change', updateMatchupPreview));
 }
 
 function suggestCouples() {
@@ -1871,9 +1883,33 @@ function suggestCouples() {
     return showToast('Servono almeno 8 giocatori per suggerire 4 coppie', 'error');
   }
 
-  selectedTournamentPlayerIds = [];
+  if (!selectedTournamentPlayerIds.length) {
+    selectedTournamentPlayerIds = getCurrentTournamentPlayerIds();
+  }
   renderPlayerSelection();
   openModal('modal-player-selection');
+}
+
+function getCurrentTournamentPlayerIds() {
+  const ids = [...document.querySelectorAll('.couple-p1, .couple-p2')]
+    .map(select => select.value)
+    .filter(Boolean);
+  return new Set(ids).size === 8 ? ids : [];
+}
+
+function updateCoupleSuggestionActions(hasSuggestion) {
+  const refineButton = document.getElementById('btn-refine-couples');
+  if (refineButton) refineButton.classList.toggle('hidden', !hasSuggestion);
+}
+
+function reformulateCouples() {
+  if (selectedTournamentPlayerIds.length !== 8) {
+    return showToast('Prima seleziona gli 8 giocatori da abbinare', 'error');
+  }
+
+  suggestedCoupleVariant = (suggestedCoupleVariant + 1) % SUGGESTED_COUPLE_VARIANTS.length;
+  applySuggestedCouples();
+  showToast('🔄 Nuovi abbinamenti proposti');
 }
 
 function renderPlayerSelection() {
@@ -1885,9 +1921,9 @@ function renderPlayerSelection() {
   list.innerHTML = [...state.players]
     .sort((a, b) => (b.elo || ELO_DEFAULT) - (a.elo || ELO_DEFAULT))
     .map(player => `
-      <label class="player-selection-card">
-        <input type="checkbox" value="${player.id}">
-        <span class="player-selection-check" aria-hidden="true">✓</span>
+       <label class="player-selection-card">
+         <input type="checkbox" value="${player.id}" ${selectedTournamentPlayerIds.includes(player.id) ? 'checked' : ''}>
+         <span class="player-selection-check" aria-hidden="true">✓</span>
         <span class="player-selection-avatar">${playerImageMarkup(player, 'closeup')}</span>
         <span class="player-selection-name">${escHtml(player.name)}</span>
         <span class="player-selection-elo">${player.elo} ELO</span>
@@ -1915,22 +1951,29 @@ function confirmPlayerSelection() {
     return showToast('Seleziona esattamente 8 giocatori', 'error');
   }
 
-  const rankedPlayers = selectedTournamentPlayerIds.map(id => getPlayer(id))
-    .filter(Boolean)
-    .sort((a, b) => (b.elo || ELO_DEFAULT) - (a.elo || ELO_DEFAULT));
-
-  rebuildCouplesUI();
-  const rows = document.querySelectorAll('.couple-row');
-  rows.forEach((row, index) => {
-    const topPlayer = rankedPlayers[index];
-    const bottomPlayer = rankedPlayers[7 - index];
-    row.querySelector('.couple-p1').value = topPlayer.id;
-    row.querySelector('.couple-p2').value = bottomPlayer.id;
-  });
+  suggestedCoupleVariant = 0;
+  applySuggestedCouples();
   updateMatchupPreview();
   closeModal('modal-player-selection');
   playSfx('click');
+  updateCoupleSuggestionActions(true);
   showToast('✨ Coppie bilanciate suggerite in base al ranking');
+}
+
+function applySuggestedCouples() {
+  const rankedPlayers = selectedTournamentPlayerIds.map(id => getPlayer(id))
+    .filter(Boolean)
+    .sort((a, b) => (b.elo || ELO_DEFAULT) - (a.elo || ELO_DEFAULT));
+  const variant = SUGGESTED_COUPLE_VARIANTS[suggestedCoupleVariant];
+
+  if (rankedPlayers.length !== 8) return;
+  rebuildCouplesUI();
+  document.querySelectorAll('.couple-row').forEach((row, index) => {
+    const [firstIndex, secondIndex] = variant[index];
+    row.querySelector('.couple-p1').value = rankedPlayers[firstIndex].id;
+    row.querySelector('.couple-p2').value = rankedPlayers[secondIndex].id;
+  });
+  updateMatchupPreview();
 }
 
 function updateMatchupPreview() {
@@ -1939,6 +1982,26 @@ function updateMatchupPreview() {
   const total = (n * (n - 1) / 2) * legs;
   document.getElementById('tourn-matchup-preview').textContent =
     `Tabellone: ${n} coppie × ${legs} giron${legs > 1 ? 'i' : 'e'} = ${total} battaglie totali`;
+
+  const rating = document.getElementById('tourn-balance-rating');
+  if (!rating) return;
+  const couples = [...document.querySelectorAll('.couple-row')].map(row => [
+    getPlayer(row.querySelector('.couple-p1').value),
+    getPlayer(row.querySelector('.couple-p2').value),
+  ]);
+  if (couples.some(([first, second]) => !first || !second)) {
+    rating.textContent = 'Bilanciamento: —';
+    return;
+  }
+
+  const playerElos = couples.flat().map(player => player.elo || ELO_DEFAULT);
+  const averageElo = playerElos.reduce((sum, elo) => sum + elo, 0) / playerElos.length;
+  const averageDeviation = couples.reduce((sum, [first, second]) => {
+    const coupleAverage = ((first.elo || ELO_DEFAULT) + (second.elo || ELO_DEFAULT)) / 2;
+    return sum + Math.abs(coupleAverage - averageElo);
+  }, 0) / couples.length;
+  const score = Math.max(0, Math.min(100, Math.round(100 - averageDeviation)));
+  rating.textContent = `Bilanciamento: ${score}/100`;
 }
 
 function saveTournament() {
