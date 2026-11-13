@@ -109,7 +109,60 @@ python3 -m pip install Pillow rembg
 python3 scripts/generate_brawl_assets.py
 ```
 
-Il comando genera i file `_closeup.png`, `_full.png` e `_complete.png`.
+Il comando genera **tre file per ogni riga** configurata in
+`scripts/generate_brawl_assets.py`: `_closeup.png`, `_full.png` e
+`_complete.png`. Non sono quindi tre file complessivi: con due nuovi giocatori
+verranno prodotti sei file.
+
+#### Come aggiungere un giocatore
+
+1. Copia l'immagine sorgente in `~/Downloads/brawlers`. Il nome del file deve
+   corrispondere esattamente alla prima voce della tupla.
+2. Recupera l'ID esatto del giocatore dal roster, ad esempio dalla console del
+   browser:
+
+   ```js
+   JSON.parse(localStorage.getItem('padelRanking_v2')).players
+   ```
+
+3. Aggiungi una riga a `PLAYERS`:
+
+   ```python
+   "nome_immagine.png": ("id_del_giocatore", (x1, y1, x2, y2), None),
+   ```
+
+   La tupla contiene questi tre valori:
+
+   - `player_id`: l'ID persistente del giocatore. Serve per nominare i file
+     generati e deve essere inserito manualmente, copiandolo dal roster.
+   - `face_box`: il rettangolo del volto nell'immagine sorgente, in pixel, nel
+     formato `(x1, y1, x2, y2)`. Viene ritagliato e ridimensionato a `512x512`
+     per `_closeup.png`.
+   - `complete_box`: rettangolo opzionale della scena da usare per
+     `_complete.png`, sempre in pixel e nello stesso formato. Usa `None` per
+     conservare l'intera immagine.
+
+   Le coordinate hanno origine nell'angolo in alto a sinistra. Per esempio,
+   `(255, 35, 615, 395)` significa: da `x=255` a `x=615` e da `y=35` a
+   `y=395`. Il crop del volto può includere un po' di spazio intorno alla testa;
+   non deve essere già quadrato perché lo script lo rende quadrato.
+
+4. Esegui il comando dalla root del repository:
+
+   ```bash
+   python3 scripts/generate_brawl_assets.py
+   ```
+
+   Lo script rielabora tutte le righe di `PLAYERS`, quindi può sovrascrivere gli
+   asset già presenti. Per questo conviene lasciare nella tabella solo sorgenti
+   effettivamente disponibili nella cartella `~/Downloads/brawlers`.
+
+Per i nuovi asset attualmente sono già configurati:
+
+```python
+"tirex.png": ("mwdiex8y54to", (260, 50, 620, 410), None),
+"robydefilippo.png": ("mvvl6lxu0xnz", (255, 35, 615, 395), None),
+```
 `_full` è un PNG trasparente verticale `704x1024`, mentre `_complete` conserva
 la scena originale e `_closeup` produce un ritratto quadrato ravvicinato.
 Il primo avvio di `rembg` può scaricare il modello di rimozione dello sfondo.

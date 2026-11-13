@@ -11,6 +11,7 @@ SOURCE_DIR = Path.home() / "Downloads" / "brawlers"
 OUTPUT_DIR = Path(__file__).resolve().parents[1] / "assets" / "players"
 
 PLAYERS = {
+    # filename: (player_id, face_box, complete_box)
     "DarioPrina_brawl.png": ("mvvjcutrf2ic", (440, 40, 800, 400), None),
     "AlbiPiro_brawl.png": ("mvvjcutrvgsf", (345, 80, 705, 440), None),
     "Manu_brawl.png": ("mvwe1vvf4dvi", (345, 75, 705, 435), None),
@@ -19,6 +20,8 @@ PLAYERS = {
     "FraProca_brawl.jpeg": ("mvvjcutrdbxy", (75, 55, 435, 415), (0, 0, 509, 1024)),
     "vando.png": ("mvzv329qdc6g", (172, 260, 532, 620), None),
     "felice.png": ("mvxkz03ccb68", (172, 260, 532, 620), None),
+    "tirex.png": ("mwdiex8y54to", (260, 50, 620, 410), None),
+    "robydefilippo.png": ("mvvl6lxu0xnz", (255, 35, 615, 395), None),
 }
 
 FULL_CANVAS_SIZE = (704, 1024)
