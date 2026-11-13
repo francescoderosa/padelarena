@@ -1,4 +1,5 @@
 import { sendPushBatch } from '@mmmike/web-push';
+import { requireAdminAuth } from '../_admin.js';
 import { jsonResponse, optionsResponse, readJson } from './_shared.js';
 
 export function onRequestOptions() {
@@ -10,9 +11,8 @@ export async function onRequestPost({ request, env }) {
     return jsonResponse({ error: 'Web Push non configurato sul server' }, 503);
   }
 
-  if (!env.PUSH_ADMIN_SECRET || request.headers.get('X-Admin-Secret') !== env.PUSH_ADMIN_SECRET) {
-    return jsonResponse({ error: 'Non autorizzato' }, 401);
-  }
+  const authError = requireAdminAuth(request, env);
+  if (authError) return authError;
 
   const body = await readJson(request);
   const title = typeof body?.title === 'string' ? body.title.trim().slice(0, 120) : '';

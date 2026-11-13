@@ -1033,23 +1033,24 @@ function renderMatches() {
 }
 
 function renderMatchCard(m, isOngoing) {
+  const editable = isMatchEditable(m);
   const expired = isOngoing && isResultExpired(m);
   const winnerSide = m.scoreA > m.scoreB ? 'a' : m.scoreB > m.scoreA ? 'b' : null;
   const scoreTxt = expired
     ? `<div class="score-display match-expired-label">SCADUTA</div>`
     : isOngoing
-      ? `<div class="score-display" style="color:var(--neon-pink);font-size:1.1rem;letter-spacing:0.06em">IN CORSO</div>`
+      ? `<div class="score-display" style="color:var(--neon-pink);font-size:1.1rem;letter-spacing:0.06em">${editable ? 'IN CORSO' : 'CHIUSA'}</div>`
       : winnerSide
         ? `<div class="match-winner-players">${teamWinnerMarkup(winnerSide === 'a' ? m.teamA : m.teamB)}</div>`
         : '<span class="match-draw-label">PAREGGIO</span>';
 
   const actions = isOngoing
-    ? `${expired
-      ? '<span class="match-expired-note">Risultato non inserito entro 7 giorni</span>'
-      : `<button class="btn-icon btn-icon-score" data-result="${m.id}">LIVE</button>`}
-        <button class="btn-icon btn-icon-del" data-del-match="${m.id}" title="Elimina">🗑</button>`
+    ? `${editable
+      ? `<button class="btn-icon btn-icon-score" data-result="${m.id}">LIVE</button>`
+      : `<span class="match-expired-note">${expired ? 'Risultato non inserito entro 7 giorni' : 'Modificabilita disattivata'}</span>`}
+        ${editable ? '<button class="btn-icon btn-icon-del" data-del-match="' + m.id + '" title="Elimina">🗑</button>' : ''}`
     : `<button class="btn btn-secondary btn-match-detail" data-match-detail="${m.id}">DETTAGLI</button>
-        <button class="btn-icon btn-icon-del" data-del-match="${m.id}" title="Elimina">🗑</button>`;
+        ${editable ? '<button class="btn-icon btn-icon-del" data-del-match="' + m.id + '" title="Elimina">🗑</button>' : ''}`;
 
   const classA = winnerSide === 'a' ? 'winner-team' : winnerSide === 'b' ? 'loser-team' : '';
   const classB = winnerSide === 'b' ? 'winner-team' : winnerSide === 'a' ? 'loser-team' : '';
@@ -1074,6 +1075,7 @@ function renderMatchCard(m, isOngoing) {
            <div class="match-players">${teamPlayersMarkup(m.teamB, 'team-b')}</div>
         </div>
       </div>
+       <div class="match-id">ID: ${escHtml(m.id)}</div>
     </div>`;
 }
 
@@ -1147,6 +1149,9 @@ function openMatchDetail(matchId) {
 function deleteMatch(id) {
   playSfx('delete');
   const m = state.matches.find(x => x.id === id);
+  if (!isMatchEditable(m)) {
+    return showToast('Questa partita non è più modificabile', 'error');
+  }
   if (m && m.tournamentId) {
     const t = state.tournaments.find(x => x.id === m.tournamentId);
     if (t) {
@@ -1220,7 +1225,7 @@ function saveMatch() {
     if (!sets) return showToast('Completa il punteggio del set', 'error');
   }
 
-  const match = { id: uid(), type, status, teamA: [a1, a2], teamB: [b1, b2], scoreA, scoreB, sets, date };
+  const match = { id: uid(), type, status, editable: true, teamA: [a1, a2], teamB: [b1, b2], scoreA, scoreB, sets, date };
   state.matches.push(match);
   if (status === 'completed') {
     recomputeAllElo();
@@ -1245,8 +1250,8 @@ function initResultModal() {
 function openResultModal(matchId) {
   const m = state.matches.find(x => x.id === matchId);
   if (!m) return;
-  if (isResultExpired(m)) {
-    return showToast('Questa partita è scaduta: il risultato non può più essere inserito o modificato', 'error');
+  if (!isMatchEditable(m)) {
+    return showToast('Questa partita non è più modificabile', 'error');
   }
 
   document.getElementById('result-match-id').value = matchId;
@@ -1272,9 +1277,9 @@ function saveResult() {
   const matchId = document.getElementById('result-match-id').value;
   const m = state.matches.find(x => x.id === matchId);
   if (!m) return;
-  if (isResultExpired(m)) {
+  if (!isMatchEditable(m)) {
     closeModal('modal-result');
-    return showToast('Questa partita è scaduta: il risultato non può più essere inserito o modificato', 'error');
+    return showToast('Questa partita non è più modificabile', 'error');
   }
 
   const status = getToggleVal('result-status-toggle') || 'completed';
@@ -1596,6 +1601,8 @@ function renderTournamentCard(t) {
   const total = t.matchups.length;
   const pct = Math.round(done / total * 100) || 0;
   const isLive = t.status === 'ongoing';
+  const editable = isTournamentEditable(t);
+  const deletable = isTournamentDeletable(t);
 
   const ranking = computeTournamentRanking(t);
   const winnerCouple = done > 0 && ranking[0] ? t.couples[ranking[0].coupleIdx] : null;
@@ -1616,16 +1623,17 @@ function renderTournamentCard(t) {
         <div class="tourn-badges">
           <span class="tourn-badge">${t.matchType === 'games' ? '🏃 GAMES' : '🎾 SETS'}</span>
           <span class="tourn-badge">${t.couples.length} COPPIE</span>
-          <span class="tourn-badge ${isLive ? 'live' : 'done'}">${isLive ? '⚡ IN CORSO' : '🏆 TERMINATO'}</span>
+          <span class="tourn-badge ${editable && isLive ? 'live' : 'done'}">${editable && isLive ? '⚡ IN CORSO' : editable ? '🏆 TERMINATO' : '🔒 CHIUSA'}</span>
         </div>
       </div>
       <div class="tourn-progress">
         <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
         <div class="progress-label">${done}/${total} BATTAGLIE COMPLETATE (${pct}%)</div>
+        <div class="tourn-id">ID: ${escHtml(t.id)}</div>
       </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
         <button class="btn btn-secondary" data-tourn-detail="${t.id}">📋 TABELLONE</button>
-        <button class="btn-icon btn-icon-del" data-del-tourn="${t.id}">🗑</button>
+        ${deletable ? `<button class="btn-icon btn-icon-del" data-del-tourn="${t.id}">🗑</button>` : ''}
       </div>
     </div>`;
 }
@@ -1633,6 +1641,9 @@ function renderTournamentCard(t) {
 function deleteTournament(id) {
   playSfx('delete');
   const t = state.tournaments.find(x => x.id === id);
+  if (!isTournamentDeletable(t)) {
+    return showToast('Questa serata non è più modificabile', 'error');
+  }
   if (t) state.matches = state.matches.filter(m => m.tournamentId !== id);
   state.tournaments = state.tournaments.filter(x => x.id !== id);
   recomputeAllElo();
@@ -1696,15 +1707,16 @@ function openTournamentDetail(tid) {
     const nameB = coupleNamesMarkup(cB);
     const isDone = mu.scoreA !== null;
     const linkedMatch = mu.matchId ? state.matches.find(m => m.id === mu.matchId) : null;
-    const expired = isResultExpired(linkedMatch || { date: t.date });
+    const editable = linkedMatch ? isMatchEditable(linkedMatch) : isTournamentEditable(t);
+    const expired = !editable;
     const legLabel = t.matchups.filter(x => x.cA === mu.cA && x.cB === mu.cB).length > 1 ? ` <small style="color:var(--neon-cyan)">(g.${mu.leg + 1})</small>` : '';
     const scoreAClass = mu.scoreA > mu.scoreB ? 'matchup-score-win' : mu.scoreA < mu.scoreB ? 'matchup-score-loss' : 'matchup-score-draw';
     const scoreBClass = mu.scoreB > mu.scoreA ? 'matchup-score-win' : mu.scoreB < mu.scoreA ? 'matchup-score-loss' : 'matchup-score-draw';
     const scoreHtml = isDone
       ? `<span class="matchup-score played"><span class="${scoreAClass}">${mu.scoreA}</span> : <span class="${scoreBClass}">${mu.scoreB}</span></span>`
       : '';
-    const actionBtn = expired
-      ? '<span class="match-expired-note">SCADUTA</span>'
+    const actionBtn = !editable
+      ? `<span class="match-expired-note">${isResultExpired(linkedMatch || { date: t.date }) ? 'SCADUTA' : 'CHIUSA'}</span>`
       : isDone
         ? `<button class="btn-icon btn-icon-edit" data-tourn-matchup="${tid}__${mu.id}" title="Modifica">✏️</button>`
         : `<button class="btn-icon btn-icon-score" data-tourn-matchup="${tid}__${mu.id}" title="Registra">LIVE</button>`;
@@ -1782,8 +1794,8 @@ function openMatchupResultModal(tid, muId) {
   const mu = t.matchups.find(x => x.id === muId);
   if (!mu) return;
   const linkedMatch = mu.matchId ? state.matches.find(m => m.id === mu.matchId) : null;
-  if (isResultExpired(linkedMatch || { date: t.date })) {
-    return showToast('Questo matchup è scaduto: il risultato non può più essere inserito o modificato', 'error');
+  if (linkedMatch ? !isMatchEditable(linkedMatch) : !isTournamentEditable(t)) {
+    return showToast('Questo matchup non è più modificabile', 'error');
   }
 
   let matchId = mu.matchId;
@@ -1791,7 +1803,7 @@ function openMatchupResultModal(tid, muId) {
     const cA = t.couples[mu.cA];
     const cB = t.couples[mu.cB];
     const m = {
-      id: uid(), type: t.matchType, status: 'ongoing',
+      id: uid(), type: t.matchType, status: 'ongoing', editable: true,
       teamA: cA, teamB: cB,
       scoreA: null, scoreB: null,
       date: t.date, tournamentId: tid
@@ -2026,7 +2038,7 @@ function saveTournament() {
 
   const matchups = generateMatchups(couples, format);
   const t = {
-    id: uid(), name, date, status: 'ongoing',
+    id: uid(), name, date, status: 'ongoing', editable: true,
     matchType: type, scoringMode: type, format, couples, matchups,
   };
   state.tournaments.push(t);
@@ -2126,6 +2138,28 @@ function initAutoSyncPolling() {
 // ── Demo & Startup ───────────────────────────────────────────────────────────
 function todayStr() { return new Date().toISOString().split('T')[0]; }
 
+function isTournamentEditable(tournament) {
+  if (!tournament || tournament.editable === false) return false;
+  return !isResultExpired(tournament);
+}
+
+function isTournamentDeletable(tournament) {
+  if (!isTournamentEditable(tournament)) return false;
+  return tournament.matchups.every(matchup => {
+    if (!matchup.matchId) return true;
+    return isMatchEditable(state.matches.find(match => match.id === matchup.matchId));
+  });
+}
+
+function isMatchEditable(match) {
+  if (!match || match.editable === false) return false;
+  if (match.tournamentId) {
+    const tournament = state.tournaments.find(t => t.id === match.tournamentId);
+    if (tournament && !isTournamentEditable(tournament)) return false;
+  }
+  return !isResultExpired(match);
+}
+
 function isResultExpired(match) {
   if (!match?.date) return false;
   const [year, month, day] = match.date.split('-').map(Number);
@@ -2147,7 +2181,7 @@ function seedDemoData() {
 function registerSW() {
   if ('serviceWorker' in navigator) {
     return navigator.serviceWorker
-      .register('sw.js?v=4.15', { updateViaCache: 'none' })
+      .register('sw.js?v=4.16', { updateViaCache: 'none' })
       .catch(e => {
         console.warn('SW', e);
         return null;

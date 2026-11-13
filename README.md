@@ -350,6 +350,28 @@ export BASE_URL="https://controvetro.padelmate.it"
 
 Non inserire `VAPID_PRIVATE_KEY` o `PUSH_ADMIN_SECRET` nel repository, nei comandi condivisi o nel codice client. Se il tail non mostra alcuna richiesta quando si clicca un pulsante, controllare prima la Console del browser: il problema può trovarsi in `Notification.requestPermission()`, nel Service Worker o in `PushManager.subscribe()` e quindi precedere la chiamata HTTP.
 
+### Modificabilita delle partite
+
+Ogni battaglia (`matches`) e ogni serata (`tournaments`) ha il campo `editable`, che vale `true` per i dati esistenti quando il campo non è presente. La partita resta comunque modificabile solo entro 7 giorni dalla data: `editable: false` consente di chiuderla in anticipo, ma non può riaprirla dopo la scadenza automatica.
+
+Le rotte amministrative sono raggruppate sotto `/api/admin/` e usano lo stesso header `X-Admin-Secret` della rotta push:
+
+```bash
+export PUSH_ADMIN_SECRET="<PUSH_ADMIN_SECRET dell'ambiente>"
+
+curl -i -X PATCH "$BASE_URL/api/admin/matches/<MATCH_ID>/editable" \
+  -H "X-Admin-Secret: $PUSH_ADMIN_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"editable":false}'
+
+curl -i -X PATCH "$BASE_URL/api/admin/tournaments/<TOURNAMENT_ID>/editable" \
+  -H "X-Admin-Secret: $PUSH_ADMIN_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"editable":true}'
+```
+
+Il server rifiuta con `409` le sincronizzazioni che tentano di modificare o rimuovere una partita o una serata chiusa manualmente o scaduta.
+
 ## PUSH NOTIFICATIONS
 
 ### Modello Web Push
