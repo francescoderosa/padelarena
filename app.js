@@ -1075,6 +1075,7 @@ function renderMatchCard(m, isOngoing) {
            <div class="match-players">${teamPlayersMarkup(m.teamB, 'team-b')}</div>
         </div>
       </div>
+       <div class="match-id">ID: ${escHtml(m.id)}</div>
     </div>`;
 }
 
@@ -1628,6 +1629,7 @@ function renderTournamentCard(t) {
       <div class="tourn-progress">
         <div class="progress-bar-track"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
         <div class="progress-label">${done}/${total} BATTAGLIE COMPLETATE (${pct}%)</div>
+        <div class="tourn-id">ID: ${escHtml(t.id)}</div>
       </div>
       <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
         <button class="btn btn-secondary" data-tourn-detail="${t.id}">📋 TABELLONE</button>
