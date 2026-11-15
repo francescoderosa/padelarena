@@ -12,16 +12,19 @@ OUTPUT_DIR = Path(__file__).resolve().parents[1] / "assets" / "players"
 
 PLAYERS = {
     # filename: (player_id, face_box, complete_box)
-    "DarioPrina_brawl.png": ("mvvjcutrf2ic", (440, 40, 800, 400), None),
-    "AlbiPiro_brawl.png": ("mvvjcutrvgsf", (345, 80, 705, 440), None),
-    "Manu_brawl.png": ("mvwe1vvf4dvi", (345, 75, 705, 435), None),
-    "RobyTorti_brawl.png": ("mvvl69yshvaz", (345, 75, 705, 435), None),
-    "StefanoDelMonte_brawl.png": ("mvvl55fl2w0c", (355, 60, 715, 420), None),
-    "FraProca_brawl.jpeg": ("mvvjcutrdbxy", (75, 55, 435, 415), (0, 0, 509, 1024)),
-    "vando.png": ("mvzv329qdc6g", (172, 260, 532, 620), None),
-    "felice.png": ("mvxkz03ccb68", (172, 260, 532, 620), None),
-    "tirex.png": ("mwdiex8y54to", (260, 50, 620, 410), None),
-    "robydefilippo.png": ("mvvl6lxu0xnz", (255, 35, 615, 395), None),
+    # "DarioPrina_brawl.png": ("mvvjcutrf2ic", (440, 40, 800, 400), None),
+    # "AlbiPiro_brawl.png": ("mvvjcutrvgsf", (345, 80, 705, 440), None),
+    # "Manu_brawl.png": ("mvwe1vvf4dvi", (345, 75, 705, 435), None),
+    # "RobyTorti_brawl.png": ("mvvl69yshvaz", (345, 75, 705, 435), None),
+    # "StefanoDelMonte_brawl.png": ("mvvl55fl2w0c", (355, 60, 715, 420), None),
+    # "FraProca_brawl.jpeg": ("mvvjcutrdbxy", (75, 55, 435, 415), (0, 0, 509, 1024)),
+    # "vando.png": ("mvzv329qdc6g", (172, 260, 532, 620), None),
+    # "felice.png": ("mvxkz03ccb68", (172, 260, 532, 620), None),
+    # "tirex.png": ("mwdiex8y54to", (260, 50, 620, 410), None),
+    # "robydefilippo.png": ("mvvl6lxu0xnz", (255, 35, 615, 395), None),
+    "SteNever_brawl.png": ("mvvl5pt8v56s", (190, 30, 550, 390), None),
+    "Angelo_brawl.png": ("mwgppmyvn4zf", (175, 30, 535, 390), None),
+    "Fra66_brawl.png": ("mvvjcutr9y2c", (180, 20, 540, 380), None),
 }
 
 FULL_CANVAS_SIZE = (704, 1024)
