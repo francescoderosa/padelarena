@@ -22,9 +22,10 @@ PLAYERS = {
     # "felice.png": ("mvxkz03ccb68", (172, 260, 532, 620), None),
     # "tirex.png": ("mwdiex8y54to", (260, 50, 620, 410), None),
     # "robydefilippo.png": ("mvvl6lxu0xnz", (255, 35, 615, 395), None),
-    "SteNever_brawl.png": ("mvvl5pt8v56s", (190, 30, 550, 390), None),
-    "Angelo_brawl.png": ("mwgppmyvn4zf", (175, 30, 535, 390), None),
-    "Fra66_brawl.png": ("mvvjcutr9y2c", (180, 20, 540, 380), None),
+    # "SteNever_brawl.png": ("mvvl5pt8v56s", (190, 30, 550, 390), None),
+    # "Angelo_brawl.png": ("mwgppmyvn4zf", (175, 30, 535, 390), None),
+    # "Fra66_brawl.png": ("mvvjcutr9y2c", (180, 20, 540, 380), None),
+    "MassiCrepaldi_brawl.png": ("mw1621du9hpv", (190, 25, 550, 385), None),
 }
 
 FULL_CANVAS_SIZE = (704, 1024)
@@ -75,7 +76,12 @@ def generate_assets(
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     for filename, (player_id, face_box, complete_box) in PLAYERS.items():
-        generate_assets(SOURCE_DIR / filename, player_id, face_box, complete_box)
+        generate_assets(
+            SOURCE_DIR / filename,
+            player_id,
+            face_box,
+            complete_box,
+        )
         print(
             f"{filename} -> {player_id}_closeup.png, "
             f"{player_id}_full.png, {player_id}_complete.png"
